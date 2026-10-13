@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UseFirst – Smart Household Consumption Prioritization and Replenishment</title>
+<meta name="description" content="UseFirst tracks household groceries, shows what to use first, warns before food expires and builds shopping lists from real usage.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f172a; --on-ink: #ffffff; --muted: #475569; --paper: #f4f7fb; --card: #ffffff; --line: #d9e2ec;
+  --blue: #0369a1; --blue-soft: #e0f2fe; --red: #b91c1c; --red-soft: #fee2e2; --amber: #92400e; --amber-soft: #fef3c7;
+  --green: #166534; --green-soft: #dcfce7; --gray: #475569; --gray-soft: #e8edf3; --field: #ffffff;
+  --head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e2e8f0; --on-ink: #0f172a; --muted: #94a3b8; --paper: #0b1220; --card: #111a2e; --line: #26334d;
+    --blue: #38bdf8; --blue-soft: #0c2a3f; --red: #fca5a5; --red-soft: #3b1414; --amber: #fcd34d; --amber-soft: #3a2a0a;
+    --green: #86efac; --green-soft: #0f2e1c; --gray: #a8b5c7; --gray-soft: #1b2740; --field: #0e1730;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e2e8f0; --on-ink: #0f172a; --muted: #94a3b8; --paper: #0b1220; --card: #111a2e; --line: #26334d;
+  --blue: #38bdf8; --blue-soft: #0c2a3f; --red: #fca5a5; --red-soft: #3b1414; --amber: #fcd34d; --amber-soft: #3a2a0a;
+  --green: #86efac; --green-soft: #0f2e1c; --gray: #a8b5c7; --gray-soft: #1b2740; --field: #0e1730;
+}
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; font-family: var(--body); font-size: 1.0625rem; line-height: 1.5; color: var(--ink); background: var(--paper); }
+h1, h2, h3 { font-family: var(--head); line-height: 1.15; margin: 0 0 .5rem; }
+h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 800; }
+h2 { font-size: 1.2rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0 0 .75rem; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+.muted { color: var(--muted); } .small { font-size: .92rem; } .center { text-align: center; }
+
+/* Auth */
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem 1rem; }
+.auth-card { width: 100%; max-width: 440px; background: var(--card); border: 2px solid var(--ink); border-radius: 16px; padding: 1.75rem; box-shadow: 6px 6px 0 var(--ink); }
+.auth-card.wide-card { max-width: 760px; }
+.brand-big { font-family: var(--head); font-weight: 800; font-size: 1.5rem; margin-bottom: .75rem; color: var(--blue); }
+.seg { display: flex; gap: .4rem; margin: 1rem 0; }
+.seg button { flex: 1; padding: .55rem; border: 2px solid var(--ink); border-radius: 8px; background: var(--card); font-weight: 700; cursor: pointer; }
+.seg button.on { background: var(--ink); color: var(--on-ink); }
+.fineprint { font-size: .88rem; color: var(--muted); margin-top: 1rem; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+.two form { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+
+/* Forms */
+.f { display: block; margin-bottom: .8rem; }
+.f > span { display: block; font-weight: 600; font-size: .95rem; margin-bottom: .25rem; }
+input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], input[type=search], select {
+  width: 100%; padding: .6rem .7rem; border: 2px solid var(--line); border-radius: 8px; background: var(--field); min-height: 2.6rem;
+}
+input:focus, select:focus { border-color: var(--blue); }
+.bar-row { display: flex; gap: .5rem; } .bar-row input { flex: 1; }
+.hint { font-size: .88rem; color: var(--muted); margin: .3rem 0 0; }
+.err { color: var(--red); font-weight: 600; min-height: 1.2em; margin: 0 0 .5rem; }
+.two-s { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.chk { display: flex; align-items: center; gap: .55rem; cursor: pointer; }
+.chk input { width: 1.2rem; height: 1.2rem; accent-color: var(--blue); }
+
+/* Buttons */
+.btn { display: inline-block; padding: .6rem 1.1rem; border: 2px solid var(--ink); border-radius: 8px; background: transparent; font-weight: 700; cursor: pointer; }
+.btn:hover { background: var(--ink); color: var(--on-ink); }
+.btn.primary { background: var(--ink); color: var(--on-ink); }
+.btn.primary:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn.wide { width: 100%; }
+.danger-btn { border-color: var(--red); color: var(--red); } .danger-btn:hover { background: var(--red); color: var(--card); border-color: var(--red); }
+.small-btn { padding: .3rem .7rem; border: 2px solid var(--ink); border-radius: 6px; background: var(--card); font-weight: 700; font-size: .9rem; cursor: pointer; }
+.small-btn:hover { background: var(--ink); color: var(--on-ink); }
+.small-btn.ghost { border-color: var(--line); } .small-btn.ghost:hover { border-color: var(--ink); }
+.small-btn.danger { color: var(--red); } .small-btn.danger:hover { background: var(--red); color: var(--card); border-color: var(--red); }
+.link-btn, .linklike { background: none; border: 0; padding: 0; color: var(--blue); font-weight: 700; cursor: pointer; text-align: left; }
+.link-btn { text-decoration: underline; } .linklike:hover { text-decoration: underline; }
+.row-gap { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* Shell */
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.side { background: var(--card); border-right: 1px solid var(--line); padding: 1.25rem .9rem; position: sticky; top: 0; align-self: start; height: 100vh; }
+.brand { font-family: var(--head); font-weight: 800; font-size: 1.5rem; color: var(--blue); margin: 0 0 1.25rem .5rem; }
+.side-nav { display: flex; flex-direction: column; gap: .2rem; }
+.nav-btn { display: flex; justify-content: space-between; align-items: center; padding: .6rem .75rem; border: 0; border-radius: 8px; background: none; font-weight: 600; cursor: pointer; text-align: left; color: var(--muted); }
+.nav-btn:hover { background: var(--blue-soft); color: var(--ink); }
+.nav-btn.on { background: var(--ink); color: var(--on-ink); }
+.badge { min-width: 1.4rem; padding: 0 .4rem; border-radius: 99px; background: var(--red); color: #fff; font-size: .8rem; text-align: center; margin-left: .4rem; }
+.main { min-width: 0; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 1.5rem; background: var(--paper); border-bottom: 1px solid var(--line); }
+.bar-l, .bar-r { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+.role { background: var(--blue-soft); color: var(--blue); font-weight: 700; font-size: .85rem; padding: .15rem .6rem; border-radius: 99px; }
+.view { padding: 1.5rem; max-width: 1100px; }
+.bottom { display: none; }
+.page-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.page-head h1 { margin: 0; }
+.lead { max-width: 65ch; }
+.sec { margin-top: 2rem; }
+
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+.card.flush { padding: 0; overflow: hidden; }
+.card-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .5rem; }
+.card-h h2 { margin: 0; } .pad { padding: 1rem 1.25rem; } .pad-top { margin-top: 1.25rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid2 > .card { margin-bottom: 0; } .grid2 { margin-bottom: 1rem; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin-bottom: 1rem; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; border-top: 5px solid var(--green); }
+.stat.amber { border-top-color: var(--amber); } .stat.red { border-top-color: var(--red); }
+.stat-l { font-weight: 600; color: var(--muted); margin: 0; font-size: .95rem; }
+.stat-n { font-family: var(--head); font-size: 2.1rem; font-weight: 800; line-height: 1.1; margin: .1rem 0; }
+.stat-s { color: var(--muted); font-size: .88rem; margin: 0; }
+.big-line { font-size: 1.1rem; }
+.empty-card { background: var(--card); border: 2px dashed var(--line); border-radius: 14px; padding: 2rem; text-align: center; }
+
+/* Item rows */
+.ilist, .alist, .slist, .log, .plain-list, .ranked { list-style: none; margin: 0; padding: 0; }
+.irow { display: grid; grid-template-columns: minmax(0, 1fr) 6rem 11rem 16.5rem; gap: .75rem; align-items: center; padding: .7rem 1.1rem; border-top: 1px solid var(--line); }
+.ilist .irow:first-child { border-top: 0; }
+.card:not(.flush) .irow { padding-left: 0; padding-right: 0; }
+.iname { min-width: 0; } .iname .linklike { font-size: 1.05rem; color: var(--ink); } .iname small { display: block; color: var(--muted); font-size: .86rem; }
+.iqty { font-weight: 600; } .ichips { display: flex; gap: .35rem; flex-wrap: wrap; } .iact { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+.chip { display: inline-block; padding: .15rem .55rem; border-radius: 6px; font-weight: 700; font-size: .84rem; white-space: nowrap; }
+.chip.red { background: var(--red-soft); color: var(--red); } .chip.amber { background: var(--amber-soft); color: var(--amber); }
+.chip.green { background: var(--green-soft); color: var(--green); } .chip.gray { background: var(--gray-soft); color: var(--gray); }
+.ranked .rank-row { display: grid; grid-template-columns: 2.6rem 1fr; align-items: center; border-top: 1px solid var(--line); }
+.ranked .rank-row:first-child { border-top: 0; }
+.rank { font-family: var(--head); font-weight: 800; font-size: 1.2rem; text-align: center; color: var(--blue); }
+.ilist.inner { width: 100%; } .ilist.inner .irow { border-top: 0; padding-left: 0; }
+.toolbar { display: flex; gap: .8rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1rem; }
+.toolbar .f { margin-bottom: 0; } .toolbar .grow { flex: 1; min-width: 200px; } .toolbar select { min-width: 9.5rem; }
+
+
+.grid2 .irow { grid-template-columns: 1fr auto; row-gap: .35rem; }
+.grid2 .iqty { text-align: right; } .grid2 .ichips { grid-column: 1 / -1; } .grid2 .iact { grid-column: 1 / -1; justify-content: flex-start; }
+
+/* Alerts, shopping */
+.arow { display: flex; gap: .75rem; align-items: center; padding: .55rem 0; border-top: 1px solid var(--line); }
+.alist .arow:first-child { border-top: 0; } .alist.full .arow { padding: .75rem 1.25rem; } .arow.unread { background: var(--blue-soft); }
+.srow { display: grid; grid-template-columns: minmax(0, 2fr) auto minmax(0, 2fr) auto; gap: .75rem; align-items: center; padding: .7rem 1.25rem; border-top: 1px solid var(--line); }
+.slist .srow:first-child { border-top: 0; } .srow.done .sname { text-decoration: line-through; color: var(--muted); }
+.sname { font-weight: 600; } .sreason { color: var(--muted); font-size: .9rem; } .unit { color: var(--muted); }
+.sqty { width: 5rem; min-height: 2.2rem; padding: .3rem .5rem; border: 2px solid var(--line); border-radius: 6px; background: var(--field); }
+.inline-form { display: flex; gap: .8rem; align-items: flex-end; flex-wrap: wrap; } .inline-form .f { margin-bottom: 0; } .inline-form .err { flex-basis: 100%; margin: 0; }
+
+/* Reports */
+.legend { display: flex; gap: 1rem; font-size: .9rem; color: var(--muted); margin-bottom: .5rem; } .sw { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .35rem; } .sw.c, .cbar.c { background: var(--blue); } .sw.w, .cbar.w { background: var(--red); }
+.weekly { display: flex; gap: .6rem; align-items: flex-end; height: 190px; padding-top: 1.4rem; }
+.wk { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; } .wk small { color: var(--muted); font-size: .8rem; margin-top: .3rem; white-space: nowrap; }
+.bars { flex: 1; width: 100%; display: flex; gap: 4px; align-items: flex-end; justify-content: center; border-bottom: 2px solid var(--line); }
+.cbar { position: relative; width: 36%; max-width: 28px; border-radius: 4px 4px 0 0; min-height: 2px; } .cbar span { position: absolute; top: -1.25rem; left: 50%; transform: translateX(-50%); font-size: .8rem; font-weight: 700; }
+.hb { display: grid; grid-template-columns: 8.5rem 1fr 2rem; gap: .6rem; align-items: center; margin: .35rem 0; font-size: .95rem; } .hn { text-align: right; font-weight: 700; }
+.ht { background: var(--gray-soft); border-radius: 99px; height: .7rem; overflow: hidden; } .hf { height: 100%; background: var(--blue); border-radius: 99px; } .hf.red { background: var(--red); } .hf.amber { background: var(--amber); }
+.plain-list li { padding: .3rem 0; border-top: 1px solid var(--line); } .plain-list li:first-child { border-top: 0; }
+
+/* Household */
+.tablewrap { overflow-x: auto; } table { border-collapse: collapse; width: 100%; min-width: 480px; } th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--line); }
+.code span { font-family: var(--head); font-size: 1.8rem; font-weight: 800; letter-spacing: .2em; margin-right: .75rem; }
+.settings { max-width: 440px; } .log li { display: flex; gap: .8rem; padding: .35rem 0; border-top: 1px solid var(--line); font-size: .95rem; } .log li:first-child { border-top: 0; } .log time { color: var(--muted); min-width: 8.5rem; flex-shrink: 0; }
+.recipes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; } .recipe { margin: 0; }
+
+/* Modal, toast */
+.overlay { position: fixed; inset: 0; z-index: 30; background: rgba(15, 23, 42, .55); display: grid; place-items: center; padding: 1rem; overflow-y: auto; }
+.modal { width: 100%; max-width: 520px; background: var(--card); border: 2px solid var(--ink); border-radius: 14px; padding: 1.4rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+.m-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+.facts { display: grid; grid-template-columns: 9rem 1fr; gap: .35rem .8rem; margin: 0 0 1rem; } .facts dt { color: var(--muted); font-weight: 600; } .facts dd { margin: 0; }
+.toast { position: fixed; left: 50%; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: var(--on-ink); padding: .7rem 1.1rem; border-radius: 10px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 40; max-width: calc(100vw - 2rem); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+
+@media (max-width: 1180px) {
+  .irow { grid-template-columns: 1fr auto; row-gap: .35rem; }
+  .irow .iqty { text-align: right; } .irow .ichips { grid-column: 1 / -1; } .irow .iact { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
+/* Mobile */
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; padding-bottom: 4.5rem; } .side { display: none; }
+  .bottom { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; background: var(--card); border-top: 1px solid var(--line); padding: .35rem .4rem calc(.35rem + env(safe-area-inset-bottom, 0px)); overflow-x: auto; gap: .2rem; }
+  .bottom .nav-btn { flex: 0 0 auto; justify-content: center; font-size: .9rem; padding: .5rem .7rem; white-space: nowrap; }
+  .bar { padding: .6rem 1rem; } .who { display: none; } .view { padding: 1rem; }
+  .stats { grid-template-columns: 1fr 1fr; } .grid2, .recipes, .two, .two-s { grid-template-columns: 1fr; }
+  .irow { grid-template-columns: 1fr auto; row-gap: .35rem; } .iname { grid-column: 1; } .iqty { grid-column: 2; text-align: right; } .ichips { grid-column: 1 / -1; } .iact { grid-column: 1 / -1; justify-content: flex-start; }
+  .srow { grid-template-columns: 1fr auto; } .sreason { grid-column: 1 / -1; } .iact { justify-content: flex-start; }
+  .hb { grid-template-columns: 6.5rem 1fr 1.8rem; } .toast { bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* ===== v2 additions ===== */
+.glance { background: var(--blue-soft); border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem; }
+.money { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.money-n { font-family: var(--head); font-size: 1.9rem; font-weight: 800; line-height: 1.15; margin: 0; } .money-n.warn { color: var(--red); }
+.budget { margin-top: 1rem; } .budget-top { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .3rem; font-size: .95rem; }
+.assign { width: auto; min-height: 2rem; padding: .15rem .5rem; font-size: .9rem; }
+.sreason { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.iact.start { justify-content: flex-start; margin-top: .5rem; }
+.f.inline { display: inline-block; margin: 0 0 1rem; } .f.inline select { min-width: 12rem; } .card-h .f.inline { margin: 0; }
+.recipe h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.toast.act { pointer-events: auto; }
+.toast-btn { margin-left: .9rem; background: transparent; border: 2px solid var(--on-ink); color: var(--on-ink); border-radius: 6px; padding: .15rem .7rem; font-weight: 700; cursor: pointer; }
+.scanbox { margin-top: .5rem; } .scanbox video { width: 100%; max-height: 220px; border-radius: 10px; background: #000; object-fit: cover; }
+textarea.bk { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; padding: .6rem; border: 2px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); resize: vertical; }
+.mt { margin-top: 1rem; }
+td.pos { color: var(--green); font-weight: 700; } td.neg { color: var(--red); font-weight: 700; }
+.pay li { font-size: 1.05rem; }
+.weekly.short { height: 150px; } .cbar.wide { width: 50%; max-width: 40px; }
+.modal h3 { margin-bottom: .35rem; }
+
+/* Large text mode (easy reading for elderly users) */
+html.large { font-size: 19.5px; }
+html.large .small-btn, html.large .btn { min-height: 2.8rem; padding-left: 1.1rem; padding-right: 1.1rem; }
+html.large input[type=text], html.large input[type=email], html.large input[type=password], html.large input[type=number], html.large input[type=date], html.large input[type=search], html.large select { min-height: 3rem; }
+html.large .muted, html.large .iname small, html.large .stat-s, html.large .hint { color: var(--ink); opacity: .85; }
+html.large .chip { font-size: .95rem; }
+html.large .irow { grid-template-columns: 1fr auto; row-gap: .4rem; }
+html.large .irow .iqty { text-align: right; } html.large .irow .ichips, html.large .irow .iact { grid-column: 1 / -1; justify-content: flex-start; }
+html.large .nav-btn { padding: .8rem .9rem; }
+
+@media (max-width: 860px) { .money { grid-template-columns: 1fr; } .f.inline select { min-width: 0; width: 100%; } .f.inline { display: block; } }
+
+/* fixes */
+input.sqty { width: 5rem; min-height: 2.2rem; padding: .3rem .5rem; }
+.btn { color: var(--ink); text-decoration: none; }
+.btn.primary { color: var(--on-ink); } .btn.primary:hover { color: #fff; } .btn:hover { color: var(--on-ink); }
+
+/* ===== v3 additions ===== */
+.nav-btn { justify-content: flex-start; gap: .6rem; }
+.nav-btn svg { flex-shrink: 0; } .nav-btn .nl { flex: 1; text-align: left; }
+.role.sys { background: var(--ink); color: var(--on-ink); }
+.approve { border-radius: 10px; padding: .7rem 1rem; margin-bottom: 1rem; font-weight: 600; }
+.approve.ok { background: var(--green-soft); color: var(--green); } .approve.warn { background: var(--amber-soft); color: var(--amber); }
+.arow .amsg { flex: 1; min-width: 0; } .arow .small-btn { margin-left: auto; flex-shrink: 0; }
+details.resolved { margin-top: 1rem; } details.resolved summary { cursor: pointer; font-weight: 700; } details.resolved .arow { padding-left: 0; padding-right: 0; }
+.matrix th { text-align: center; } .matrix th:first-child { text-align: left; }
+.matrix td.yes { color: var(--green); font-weight: 800; text-align: center; } .matrix td.no { color: var(--muted); text-align: center; }
+.health td.ok { color: var(--green); font-weight: 700; } .health td.bad { color: var(--red); font-weight: 700; }
+.panels .arow { padding: .45rem 0; }
+.formgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .3rem .8rem; }
+.formgrid .err { grid-column: 1 / -1; }
+@media (max-width: 860px) {
+  .formgrid { grid-template-columns: 1fr 1fr; }
+  .bottom .nav-btn { flex-direction: column; gap: .15rem; font-size: .78rem; padding: .4rem .6rem; }
+  .bottom .nav-btn .nl { flex: none; text-align: center; }
+}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<noscript>UseFirst needs JavaScript to run.</noscript>
+<script>
+/*
+ UseFirst prototype. Code is organised the way the case study describes it (slide 5):
+ separate Inventory, Alerts, Shopping and Analytics logic, with the UI layer kept apart.
+   Storage and security : load/save, migrate, password hashing (PBKDF2), roles (perms)
+   Inventory            : item status, Use-First ranking (FEFO), use/waste/share, shelf life
+   Alerts               : rawAlerts, deriveAlerts, mark resolved, per-person alert choices
+   Shopping             : smart list, approval, shared expenses
+   Analytics            : usage model, money, report data, system checks (NFR1, NFR4, NFR8)
+   UI layer             : everything after "UI state" only calls the functions above
+*/
+(function () {
+'use strict';
+
+/* ================= Storage ================= */
+const KEY = 'usefirst.app.v1';
+let DB = { users: [], households: [], session: null };
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) { const p = JSON.parse(raw); if (p && Array.isArray(p.users) && Array.isArray(p.households)) DB = p; }
+} catch (e) { /* storage unavailable: app still works for this visit */ }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { /* ignore */ } }
+function migrate() {
+  DB.households.forEach(h => {
+    h.settings = h.settings || {};
+    if (h.settings.budget == null) h.settings.budget = 0;
+    if (h.settings.alertDays == null) h.settings.alertDays = 3;
+    if (h.settings.autoList == null) h.settings.autoList = true;
+    if (!h.settings.source) h.settings.source = 'catalog';
+    h.expenses = h.expenses || []; h.read = h.read || {}; h.shopping = h.shopping || []; h.log = h.log || []; h.items = h.items || [];
+  });
+  DB.users.forEach(u => {
+    u.pref = u.pref || {};
+    if (u.pref.large == null) u.pref.large = false;
+    if (u.pref.notify == null) u.pref.notify = false;
+    u.pref.alerts = Object.assign({ expired: true, soon: true, low: true, out: true }, u.pref.alerts || {});
+  });
+  DB.syslog = DB.syslog || []; DB.catalog = DB.catalog || [];
+  DB.config = DB.config || { source: (DB.households[0] && DB.households[0].settings && DB.households[0].settings.source) || 'catalog' };
+  DB.households.forEach(h => { h.resolved = h.resolved || {}; if (h.approval === undefined) h.approval = null; });
+  if (DB.users.length && !DB.users.some(x => x.sysAdmin)) DB.users[0].sysAdmin = true;
+}
+migrate();
+
+/* ================= Helpers ================= */
+const DAY = 864e5;
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtQty(n) { return String(parseFloat(Number(n).toFixed(2))); }
+function startOfToday() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function parseD(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function plusDays(n) { const d = startOfToday(); d.setDate(d.getDate() + n); return iso(d); }
+function daysLeft(s) { return s ? Math.round((parseD(s) - startOfToday()) / DAY) : null; }
+function fmtDate(s) { return s ? parseD(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
+function fmtTime(t) { return new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+function fmtMoney(n) { n = Math.round((Number(n) || 0) * 100) / 100; return '\u20B9' + n.toLocaleString('en-IN', { maximumFractionDigits: 2 }); }
+async function sha(text) {
+  if (window.crypto && crypto.subtle) {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+  let h = 5381; for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return 'weak' + h;
+}
+
+function hex(buf) { return Array.from(new Uint8Array(buf)).map(x => x.toString(16).padStart(2, '0')).join(''); }
+// Password storage: salted PBKDF2 (SHA-256, 150,000 rounds). Older accounts used a single SHA-256 and are upgraded at next sign-in.
+async function kdf(pw, salt) {
+  if (window.crypto && crypto.subtle && crypto.subtle.importKey) {
+    try {
+      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 150000, hash: 'SHA-256' }, key, 256);
+      return 'p1$' + hex(bits);
+    } catch (e) { /* fall back below */ }
+  }
+  return 'w$' + await sha(salt + pw);
+}
+async function checkPw(user, pw) {
+  if (user.hash.indexOf('p1$') === 0 || user.hash.indexOf('w$') === 0) return (await kdf(pw, user.salt)) === user.hash;
+  return (await sha(user.salt + pw)) === user.hash;
+}
+function syslog(who, text) { DB.syslog.unshift({ t: new Date().toISOString(), who: who, text: text }); if (DB.syslog.length > 300) DB.syslog.length = 300; }
+
+/* ================= Reference data ================= */
+const CATEGORIES = ['Dairy', 'Vegetables', 'Fruits', 'Bakery', 'Grains & flour', 'Pulses', 'Meat & eggs', 'Snacks', 'Beverages', 'Oil & spices', 'Other'];
+const UNITS = ['pcs', 'kg', 'g', 'L', 'ml', 'pack'];
+const LOCATIONS = ['Fridge', 'Freezer', 'Pantry', 'Counter', 'Other'];
+const ROLE_LABEL = { manager: 'Home Manager', member: 'Household Member', viewer: 'Viewer' };
+// Sample barcode catalog (stands in for a real product database). shelf = days until expiry, 0 = no expiry.
+const CATALOG = {
+  '8900000000011': { name: 'Milk', category: 'Dairy', unit: 'L', qty: 1, location: 'Fridge', shelf: 4, min: 1 },
+  '8900000000028': { name: 'Curd', category: 'Dairy', unit: 'pack', qty: 1, location: 'Fridge', shelf: 6, min: 1 },
+  '8900000000035': { name: 'Paneer', category: 'Dairy', unit: 'pack', qty: 1, location: 'Fridge', shelf: 7, min: 0 },
+  '8900000000042': { name: 'Bread', category: 'Bakery', unit: 'pack', qty: 1, location: 'Counter', shelf: 4, min: 1 },
+  '8900000000059': { name: 'Eggs', category: 'Meat & eggs', unit: 'pcs', qty: 12, location: 'Fridge', shelf: 14, min: 4 },
+  '8900000000066': { name: 'Butter', category: 'Dairy', unit: 'pack', qty: 1, location: 'Fridge', shelf: 60, min: 1 },
+  '8900000000073': { name: 'Basmati Rice', category: 'Grains & flour', unit: 'kg', qty: 5, location: 'Pantry', shelf: 0, min: 1 },
+  '8900000000080': { name: 'Wheat Flour (Atta)', category: 'Grains & flour', unit: 'kg', qty: 5, location: 'Pantry', shelf: 0, min: 1 },
+  '8900000000097': { name: 'Toor Dal', category: 'Pulses', unit: 'kg', qty: 1, location: 'Pantry', shelf: 0, min: 0.5 },
+  '8900000000103': { name: 'Tomato', category: 'Vegetables', unit: 'kg', qty: 1, location: 'Counter', shelf: 6, min: 0.5 },
+  '8900000000110': { name: 'Onion', category: 'Vegetables', unit: 'kg', qty: 2, location: 'Pantry', shelf: 20, min: 1 },
+  '8900000000127': { name: 'Potato', category: 'Vegetables', unit: 'kg', qty: 2, location: 'Pantry', shelf: 25, min: 1 },
+  '8900000000134': { name: 'Spinach', category: 'Vegetables', unit: 'pack', qty: 1, location: 'Fridge', shelf: 3, min: 0 },
+  '8900000000141': { name: 'Banana', category: 'Fruits', unit: 'pcs', qty: 6, location: 'Counter', shelf: 4, min: 0 },
+  '8900000000158': { name: 'Apple', category: 'Fruits', unit: 'pcs', qty: 4, location: 'Fridge', shelf: 14, min: 0 },
+  '8900000000165': { name: 'Cooking Oil', category: 'Oil & spices', unit: 'L', qty: 1, location: 'Pantry', shelf: 0, min: 0.5 },
+  '8900000000172': { name: 'Tea Powder', category: 'Beverages', unit: 'pack', qty: 1, location: 'Pantry', shelf: 0, min: 1 }
+};
+function findProduct(code) { const c = (DB.catalog || []).find(x => x.code === code); return c || CATALOG[code] || null; }
+function barcodeSource() { return (DB.config && DB.config.source) || 'catalog'; }
+const RECIPES = [
+  { name: 'French toast', time: 15, uses: ['bread', 'egg', 'milk'], tip: 'Whisk eggs with milk, dip the slices and pan-fry until golden.' },
+  { name: 'Paneer bhurji', time: 15, uses: ['paneer', 'onion', 'tomato'], tip: 'Saute onion and tomato, crumble in the paneer, add spices.' },
+  { name: 'Palak paneer', time: 30, uses: ['spinach', 'paneer', 'onion'], tip: 'Blanch and blend the spinach, cook with onion, add paneer cubes.' },
+  { name: 'Spinach dal', time: 30, uses: ['spinach', 'dal', 'tomato'], tip: 'Pressure-cook the dal, stir in wilted spinach, finish with a garlic tadka.' },
+  { name: 'Curd rice', time: 10, uses: ['curd', 'rice'], tip: 'Mix cooked rice with curd and salt, top with a mustard tadka.' },
+  { name: 'Kheer', time: 35, uses: ['milk', 'rice'], tip: 'Simmer rice in milk until creamy, sweeten and add cardamom.' },
+  { name: 'Vegetable sandwich', time: 10, uses: ['bread', 'tomato', 'onion', 'butter'], tip: 'Layer sliced vegetables between buttered bread and toast it.' },
+  { name: 'Egg curry', time: 25, uses: ['egg', 'onion', 'tomato'], tip: 'Make an onion-tomato masala and simmer boiled eggs in it.' },
+  { name: 'Aloo paratha', time: 30, uses: ['potato', 'flour', 'curd', 'butter'], tip: 'Stuff spiced mashed potato into atta dough and roast with butter.' },
+  { name: 'Banana smoothie', time: 5, uses: ['banana', 'milk', 'curd'], tip: 'Blend ripe bananas with chilled milk or curd.' },
+  { name: 'Fruit salad', time: 10, uses: ['apple', 'banana'], tip: 'Chop the fruit, add lemon juice and a pinch of chaat masala.' },
+  { name: 'Tomato soup', time: 25, uses: ['tomato', 'onion', 'butter', 'bread'], tip: 'Simmer tomato and onion, blend, finish with butter, serve with toast.' }
+];
+
+/* ================= Current user / permissions ================= */
+function curUser() { return DB.users.find(u => u.id === DB.session) || null; }
+function curHH(u) { return u ? (DB.households.find(h => h.id === u.householdId) || null) : null; }
+function perms(u) {
+  const r = u.role;
+  return { inv: r === 'manager', use: r === 'manager' || r === 'member', list: r === 'manager', reports: r === 'manager', admin: r === 'manager', sys: !!u.sysAdmin };
+}
+
+/* ================= Item status ================= */
+const isOut = it => it.qty <= 0;
+const isExpired = it => { const d = daysLeft(it.expiry); return it.qty > 0 && d !== null && d < 0; };
+const isSoon = (h, it) => { const d = daysLeft(it.expiry); return it.qty > 0 && d !== null && d >= 0 && d <= h.settings.alertDays; };
+const isLow = it => it.qty > 0 && it.min > 0 && it.qty <= it.min;
+function cmpExpiry(a, b) {
+  const ea = a.expiry || '9999-12-31', eb = b.expiry || '9999-12-31';
+  if (ea !== eb) return ea < eb ? -1 : 1;
+  return (a.addedOn || '') < (b.addedOn || '') ? -1 : 1;
+}
+function useFirstList(h) { return h.items.filter(i => i.qty > 0).sort(cmpExpiry); }
+
+/* ================= Alerts (derived from stock, never stale) ================= */
+function lastUseId(h, it) { const e = h.log.find(x => x.itemId === it.id && (x.type === 'consumed' || x.type === 'wasted' || x.type === 'donated')); return e ? e.id : '0'; }
+function rawAlerts(h) {
+  const out = [];
+  h.items.forEach(it => {
+    const d = daysLeft(it.expiry);
+    const q = fmtQty(it.qty) + ' ' + it.unit;
+    if (isOut(it)) out.push({ key: 'out:' + it.id + ':' + lastUseId(h, it), type: 'out', sev: 2, itemId: it.id, msg: it.name + ' is out of stock' });
+    else if (isExpired(it)) out.push({ key: 'exp:' + it.id + ':' + it.expiry, type: 'expired', sev: 3, itemId: it.id, msg: it.name + ' expired ' + (-d) + (d === -1 ? ' day' : ' days') + ' ago (' + q + ' left)' });
+    else if (isSoon(h, it)) out.push({ key: 'soon:' + it.id + ':' + it.expiry, type: 'soon', sev: d <= 1 ? 3 : 2, itemId: it.id, days: d, msg: it.name + (d === 0 ? ' expires today' : d === 1 ? ' expires tomorrow' : ' expires in ' + d + ' days') + ' (' + q + ')' });
+    if (isLow(it)) out.push({ key: 'low:' + it.id + ':' + fmtQty(it.qty), type: 'low', sev: 1, itemId: it.id, msg: it.name + ' is running low (' + q + ' left, minimum ' + fmtQty(it.min) + ')' });
+  });
+  return out.sort((a, b) => b.sev - a.sev || (a.days || 0) - (b.days || 0));
+}
+function readKeys(h, u) { return (h.read && h.read[u.id]) || []; }
+function deriveAlerts(h) { const r = h.resolved || {}; return rawAlerts(h).filter(a => !r[a.key]); }
+function resolvedAlerts(h) { const r = h.resolved || {}; return rawAlerts(h).filter(a => r[a.key]); }
+function userAlerts(h, u) { const pr = (u && u.pref && u.pref.alerts) || {}; return deriveAlerts(h).filter(a => pr[a.type] !== false); }
+function unreadCount(h, u) { const r = readKeys(h, u); return userAlerts(h, u).filter(a => r.indexOf(a.key) < 0).length; }
+
+/* ================= Activity log ================= */
+function addLog(h, u, type, it, qty, note, cost) {
+  const e = { id: uid(), t: new Date().toISOString(), userId: u ? u.id : null, userName: u ? u.name : 'System', type: type, itemId: it ? it.id : null, itemName: it ? it.name : '', qty: qty || 0, unit: it ? it.unit : '', note: note || '', cost: cost || 0 };
+  h.log.unshift(e);
+  if (h.log.length > 600) h.log.length = 600;
+  return e;
+}
+function logText(e) {
+  const q = e.qty ? fmtQty(e.qty) + ' ' + e.unit + ' of ' : '';
+  switch (e.type) {
+    case 'added': return 'added ' + e.itemName + (e.qty ? ' (' + fmtQty(e.qty) + ' ' + e.unit + ')' : '');
+    case 'restocked': return 'restocked ' + e.itemName + (e.qty ? ' (' + fmtQty(e.qty) + ' ' + e.unit + ')' : '');
+    case 'consumed': return 'used ' + q + e.itemName;
+    case 'wasted': return 'threw away ' + q + e.itemName;
+    case 'donated': return 'shared ' + q + e.itemName + ' with others';
+    case 'edited': return 'edited ' + e.itemName;
+    case 'removed': return 'removed ' + e.itemName;
+    default: return e.note || e.type;
+  }
+}
+function itemHistory(h, it) {
+  return h.log.filter(e => e.itemId === it.id || (!e.itemId && e.itemName && e.itemName.toLowerCase() === it.name.toLowerCase()));
+}
+
+/* ================= Usage patterns, smart list ================= */
+function usedSince(h, name, days, kinds) {
+  const from = Date.now() - days * DAY, n = name.toLowerCase();
+  return h.log.reduce((s, e) => (kinds.indexOf(e.type) >= 0 && e.itemName.toLowerCase() === n && new Date(e.t).getTime() >= from) ? s + e.qty : s, 0);
+}
+function dailyUse(h, it) { return usedSince(h, it.name, 28, ['consumed']) / 28; }
+function usageModel(h, it) { const perWeek = usedSince(h, it.name, 28, ['consumed']) / 4, perDay = perWeek / 7; return { perWeek: perWeek, days: (perDay > 0 && it.qty > 0) ? it.qty / perDay : null }; }
+function suggestQty(h, it) {
+  const perWeek = usedSince(h, it.name, 28, ['consumed', 'wasted']) / 4;
+  let q = perWeek > 0 ? perWeek : Math.max((it.min || 0) * 2, 1);
+  return (it.unit === 'pcs' || it.unit === 'pack') ? Math.ceil(q) : Math.ceil(q * 2) / 2;
+}
+function onList(h, name) { return h.shopping.some(s => !s.done && s.name.toLowerCase() === name.toLowerCase()); }
+function autoAdd(h, it, reason) {
+  if (onList(h, it.name)) return null;
+  const s = { id: uid(), name: it.name, qty: suggestQty(h, it), unit: it.unit, reason: reason, done: false, auto: true, assignee: '' };
+  h.shopping.push(s);
+  return s;
+}
+function generateList(h) {
+  let n = 0;
+  h.items.forEach(it => {
+    if (onList(h, it.name)) return;
+    let reason = null;
+    if (isOut(it)) reason = 'Out of stock';
+    else if (isExpired(it)) reason = 'Expired, needs replacing';
+    else if (isLow(it)) reason = 'Low stock (' + fmtQty(it.qty) + ' ' + it.unit + ' left)';
+    else { const r = dailyUse(h, it); if (r > 0 && it.qty / r < 3) reason = 'Runs out in about ' + Math.max(1, Math.round(it.qty / r)) + ' day(s) at your usual use'; }
+    if (reason) { h.shopping.push({ id: uid(), name: it.name, qty: suggestQty(h, it), unit: it.unit, reason: reason, done: false, auto: true, assignee: '' }); n++; }
+  });
+  return n;
+}
+
+/* ================= Shopping list approval (usage scenario step 10) ================= */
+function listSig(h) { return h.shopping.filter(s => !s.done).map(s => s.id + ':' + fmtQty(s.qty)).sort().join('|'); }
+function approvalState(h) {
+  const n = h.shopping.filter(s => !s.done).length;
+  if (!n) return 'none';
+  if (!h.approval) return 'pending';
+  return h.approval.sig === listSig(h) ? 'approved' : 'stale';
+}
+function approveList(h, u) {
+  const n = h.shopping.filter(s => !s.done).length; if (!n) return false;
+  h.approval = { sig: listSig(h), by: u.id, name: u.name, t: new Date().toISOString() };
+  addLog(h, u, 'approved', null, 0, 'approved the shopping list (' + n + (n === 1 ? ' item' : ' items') + ') for the next store visit');
+  save(); return true;
+}
+
+/* ================= Use / waste ================= */
+function useItem(h, u, id, amount, kind, note) {
+  const it = h.items.find(i => i.id === id);
+  if (!it) return { err: 'Item not found.' };
+  amount = Number(amount);
+  if (!(amount > 0)) return { err: 'Enter an amount above 0.' };
+  if (amount > it.qty + 1e-9) return { err: 'You only have ' + fmtQty(it.qty) + ' ' + it.unit + '.' };
+  const cost = amount * (Number(it.unitPrice) || 0);
+  it.qty = Math.round((it.qty - amount) * 1000) / 1000;
+  const entry = addLog(h, u, kind, it, amount, note, cost);
+  const verb = kind === 'wasted' ? 'Recorded waste: ' : kind === 'donated' ? 'Recorded sharing: ' : 'Recorded use: ';
+  let msg = verb + fmtQty(amount) + ' ' + it.unit + ' of ' + it.name + '.', shopId = null;
+  if (h.settings.autoList && (it.qty <= 0 || (it.min > 0 && it.qty <= it.min))) {
+    const s = autoAdd(h, it, it.qty <= 0 ? 'Finished after use' : 'Below minimum stock');
+    if (s) { shopId = s.id; msg += ' Added to the shopping list.'; }
+  }
+  save();
+  return { ok: true, msg: msg, undo: { itemId: it.id, amount: amount, logId: entry.id, shopId: shopId } };
+}
+function undoUse(h, undo) {
+  const it = h.items.find(i => i.id === undo.itemId);
+  if (!it) return false;
+  it.qty = Math.round((it.qty + undo.amount) * 1000) / 1000;
+  h.log = h.log.filter(e => e.id !== undo.logId);
+  if (undo.shopId) h.shopping = h.shopping.filter(s => s.id !== undo.shopId);
+  save();
+  return true;
+}
+
+/* ================= Money, tips, shelf life, split ================= */
+const itemValue = it => Math.max(0, it.qty) * (Number(it.unitPrice) || 0);
+function moneyAtRisk(h) { return h.items.filter(i => isExpired(i) || isSoon(h, i)).reduce((s, i) => s + itemValue(i), 0); }
+function monthStartMs() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).getTime(); }
+function spendThisMonth(h) { const m = monthStartMs(); return h.expenses.reduce((s, e) => new Date(e.t).getTime() >= m ? s + e.amount : s, 0); }
+function costSince(h, type, days) { const from = Date.now() - days * DAY; return h.log.reduce((s, e) => (e.type === type && new Date(e.t).getTime() >= from) ? s + (e.cost || 0) : s, 0); }
+const SAVE_TIPS = [
+  { k: 'milk', tip: 'Boil it and make tea, kheer or paneer today.' },
+  { k: 'curd', tip: 'Turn it into buttermilk (chaas) or kadhi.' },
+  { k: 'paneer', tip: 'Cook bhurji today, or cube it and freeze it in a closed box.' },
+  { k: 'bread', tip: 'Freeze the slices and toast them straight from the freezer.' },
+  { k: 'banana', tip: 'Peel and freeze for smoothies, or bake banana bread.' },
+  { k: 'spinach', tip: 'Cook palak today, or blanch for a minute and freeze.' },
+  { k: 'tomato', tip: 'Cook into puree and freeze it in small portions.' },
+  { k: 'egg', tip: 'Hard-boil them. Boiled eggs keep for about a week in the fridge.' },
+  { k: 'apple', tip: 'Slice into a fruit salad or stew with a little sugar.' }
+];
+function saveTip(it) {
+  const n = it.name.toLowerCase();
+  const hit = SAVE_TIPS.find(t => n.indexOf(t.k) >= 0);
+  if (hit) return hit.tip;
+  if (it.category === 'Vegetables') return 'Cook it into a sabzi or soup today.';
+  if (it.category === 'Fruits') return 'Eat it today or blend it into a smoothie.';
+  if (it.category === 'Dairy') return 'Use it today, or share it with a neighbour.';
+  return 'Cook it soon, or share it while it is still fresh.';
+}
+// Conservative typical shelf life in days. It is an estimate, so always check the pack.
+const SHELF = {
+  'Dairy': { Fridge: 5, Freezer: 60, Counter: 1, Pantry: 1, Other: 2 },
+  'Vegetables': { Fridge: 7, Counter: 4, Pantry: 14, Freezer: 90, Other: 4 },
+  'Fruits': { Fridge: 10, Counter: 4, Pantry: 4, Freezer: 90, Other: 4 },
+  'Bakery': { Counter: 3, Pantry: 3, Fridge: 6, Freezer: 60, Other: 3 },
+  'Meat & eggs': { Fridge: 3, Freezer: 90, Counter: 1, Pantry: 1, Other: 1 },
+  'Snacks': { Pantry: 60, Counter: 60, Fridge: 90, Freezer: 90, Other: 60 },
+  'Grains & flour': { Pantry: 180, Counter: 180, Fridge: 180, Freezer: 180, Other: 180 },
+  'Pulses': { Pantry: 180, Counter: 180, Fridge: 180, Freezer: 180, Other: 180 },
+  'Oil & spices': { Pantry: 180, Counter: 180, Fridge: 180, Freezer: 180, Other: 180 },
+  'Beverages': { Pantry: 120, Counter: 120, Fridge: 120, Freezer: 120, Other: 120 }
+};
+function typicalDays(category, location) { const c = SHELF[category]; return c ? (c[location] || null) : null; }
+function ledger(h) {
+  const members = DB.users.filter(x => x.householdId === h.id && x.role !== 'viewer');
+  const ids = members.map(m => m.id);
+  const open = h.expenses.filter(e => !e.settled && ids.indexOf(e.userId) >= 0);
+  const total = open.reduce((s, e) => s + e.amount, 0);
+  const share = members.length ? total / members.length : 0;
+  const paid = {}; open.forEach(e => { paid[e.userId] = (paid[e.userId] || 0) + e.amount; });
+  const rows = members.map(m => ({ m: m, paid: paid[m.id] || 0, bal: (paid[m.id] || 0) - share }));
+  const cred = rows.filter(r => r.bal > 0.5).map(r => ({ m: r.m, a: r.bal })).sort((a, b) => b.a - a.a);
+  const debt = rows.filter(r => r.bal < -0.5).map(r => ({ m: r.m, a: -r.bal })).sort((a, b) => b.a - a.a);
+  const pay = []; let i = 0, j = 0;
+  while (i < debt.length && j < cred.length) {
+    const x = Math.min(debt[i].a, cred[j].a);
+    pay.push({ from: debt[i].m, to: cred[j].m, amount: x });
+    debt[i].a -= x; cred[j].a -= x;
+    if (debt[i].a < 0.5) i++;
+    if (cred[j].a < 0.5) j++;
+  }
+  return { members: members, open: open, total: total, share: share, rows: rows, pay: pay };
+}
+
+/* ================= Backup and restore ================= */
+function makeBackup(h) {
+  return JSON.stringify({ app: 'usefirst', version: 2, exported: new Date().toISOString(), household: { name: h.name, settings: h.settings, items: h.items, log: h.log, shopping: h.shopping, expenses: h.expenses } }, null, 1);
+}
+function applyBackup(h, u, text) {
+  let d; try { d = JSON.parse(text); } catch (e) { return 'That text is not a valid backup. Paste the whole backup text.'; }
+  const b = d && d.app === 'usefirst' && d.household;
+  if (!b || !Array.isArray(b.items) || !Array.isArray(b.log) || !Array.isArray(b.shopping)) return 'This does not look like a UseFirst backup.';
+  const okItem = i => i && typeof i.name === 'string' && typeof i.qty === 'number' && typeof i.unit === 'string' && typeof i.id === 'string';
+  if (!b.items.every(okItem)) return 'Some items in the backup are damaged, so nothing was restored.';
+  h.items = b.items.map(i => ({ id: i.id, name: i.name, category: i.category || 'Other', unit: i.unit, qty: i.qty, location: i.location || 'Other', expiry: i.expiry || '', min: Number(i.min) || 0, barcode: i.barcode || '', addedOn: i.addedOn || plusDays(0), unitPrice: Number(i.unitPrice) || 0 }));
+  h.log = b.log.filter(e => e && typeof e.t === 'string' && typeof e.type === 'string').slice(0, 600);
+  h.shopping = b.shopping.filter(s => s && typeof s.name === 'string').map(s => ({ id: s.id || uid(), name: s.name, qty: Number(s.qty) || 1, unit: s.unit || 'pcs', reason: s.reason || '', done: !!s.done, auto: !!s.auto, assignee: s.assignee || '' }));
+  h.expenses = Array.isArray(b.expenses) ? b.expenses.filter(e => e && typeof e.amount === 'number') : [];
+  if (b.settings) {
+    h.settings.alertDays = Math.min(14, Math.max(1, Number(b.settings.alertDays) || 3));
+    h.settings.budget = Number(b.settings.budget) || 0;
+    h.settings.autoList = b.settings.autoList !== false;
+  }
+  addLog(h, u, 'seed', null, 0, 'restored data from a backup');
+  save();
+  return null;
+}
+
+/* ================= Recipes ================= */
+function recipeIdeas(h) {
+  const stock = h.items.filter(i => i.qty > 0 && !isExpired(i));
+  const res = [];
+  RECIPES.forEach(r => {
+    const found = [], missing = [];
+    r.uses.forEach(k => {
+      const it = stock.find(i => i.name.toLowerCase().indexOf(k) >= 0);
+      if (it) { if (found.indexOf(it) < 0) found.push(it); } else missing.push(k);
+    });
+    if (found.length < 2) return;
+    const urgent = found.filter(i => { const d = daysLeft(i.expiry); return d !== null && d <= h.settings.alertDays; });
+    const score = urgent.length * 3 + found.length * 0.1 - missing.length * 0.05;
+    res.push({ r: r, found: found, missing: missing, urgent: urgent, score: score });
+  });
+  return res.sort((a, b) => b.score - a.score).slice(0, 4);
+}
+
+/* ================= Sample data ================= */
+function seedData(h, u) {
+  const mk = (name, category, unit, qty, location, exp, min, added) => ({ id: uid(), name: name, category: category, unit: unit, qty: qty, location: location, expiry: exp === null ? '' : plusDays(exp), min: min, barcode: '', addedOn: plusDays(-added) });
+  h.items = [
+    mk('Milk', 'Dairy', 'L', 2, 'Fridge', 2, 1, 3),
+    mk('Curd', 'Dairy', 'pack', 1, 'Fridge', 4, 1, 2),
+    mk('Bread', 'Bakery', 'pack', 1, 'Counter', 3, 1, 2),
+    mk('Spinach', 'Vegetables', 'pack', 1, 'Fridge', 1, 0, 2),
+    mk('Paneer', 'Dairy', 'pack', 1, 'Fridge', 6, 0, 1),
+    mk('Eggs', 'Meat & eggs', 'pcs', 9, 'Fridge', 9, 4, 5),
+    mk('Tomato', 'Vegetables', 'kg', 0.8, 'Counter', 4, 0.5, 3),
+    mk('Banana', 'Fruits', 'pcs', 4, 'Counter', -1, 0, 5),
+    mk('Butter', 'Dairy', 'pack', 1, 'Fridge', 45, 1, 10),
+    mk('Basmati Rice', 'Grains & flour', 'kg', 4, 'Pantry', null, 1, 20),
+    mk('Wheat Flour (Atta)', 'Grains & flour', 'kg', 3, 'Pantry', null, 1, 20),
+    mk('Toor Dal', 'Pulses', 'kg', 1, 'Pantry', null, 0.5, 20),
+    mk('Cooking Oil', 'Oil & spices', 'L', 0.4, 'Pantry', null, 0.5, 20),
+    mk('Onion', 'Vegetables', 'kg', 0, 'Pantry', 18, 1, 12),
+    mk('Potato', 'Vegetables', 'kg', 1.5, 'Pantry', 20, 1, 8),
+    mk('Tea Powder', 'Beverages', 'pack', 1, 'Pantry', null, 1, 20),
+    mk('Apple', 'Fruits', 'pcs', 3, 'Fridge', 10, 0, 4)
+  ];
+  const PRICE = { 'Milk': 60, 'Curd': 40, 'Bread': 45, 'Spinach': 25, 'Paneer': 90, 'Eggs': 7, 'Tomato': 40, 'Banana': 6, 'Butter': 58, 'Basmati Rice': 95, 'Wheat Flour (Atta)': 48, 'Toor Dal': 150, 'Cooking Oil': 170, 'Onion': 35, 'Potato': 30, 'Tea Powder': 120, 'Apple': 25 };
+  h.items.forEach(it => { it.unitPrice = PRICE[it.name] || 0; });
+  h.log = [];
+  let s = 7;
+  const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const used = [['Milk', 'L', 1], ['Eggs', 'pcs', 3], ['Bread', 'pack', 1], ['Tomato', 'kg', 0.5], ['Curd', 'pack', 1], ['Onion', 'kg', 0.5], ['Spinach', 'pack', 1], ['Banana', 'pcs', 2]];
+  const lost = [['Spinach', 'pack', 1], ['Bread', 'pack', 1], ['Banana', 'pcs', 2], ['Tomato', 'kg', 0.5], ['Curd', 'pack', 1]];
+  const events = [];
+  for (let d = 1; d <= 41; d++) {
+    const n = rnd() < 0.7 ? 2 : 1;
+    for (let k = 0; k < n; k++) { const x = used[Math.floor(rnd() * used.length)]; events.push({ d: d, type: 'consumed', x: x }); }
+    if (rnd() < 0.13) { const x = lost[Math.floor(rnd() * lost.length)]; events.push({ d: d, type: 'wasted', x: x }); }
+  }
+  events.forEach(ev => {
+    const t = new Date(Date.now() - ev.d * DAY - Math.floor(rnd() * 8) * 3600e3).toISOString();
+    h.log.push({ id: uid(), t: t, userId: u.id, userName: u.name, type: ev.type, itemId: null, itemName: ev.x[0], qty: ev.x[2], unit: ev.x[1], note: '', cost: ev.x[2] * (PRICE[ev.x[0]] || 0) });
+  });
+  h.items.forEach(it => {
+    h.log.push({ id: uid(), t: new Date(parseD(it.addedOn).getTime() + 10 * 3600e3).toISOString(), userId: u.id, userName: u.name, type: 'added', itemId: it.id, itemName: it.name, qty: it.qty, unit: it.unit, note: '' });
+  });
+  h.log.sort((a, b) => (a.t < b.t ? 1 : -1));
+  const ago = d => new Date(Date.now() - d * DAY).toISOString();
+  h.expenses = [
+    { id: uid(), t: ago(1), userId: u.id, userName: u.name, amount: 310, itemName: 'Milk and dairy', settled: false },
+    { id: uid(), t: ago(3), userId: u.id, userName: u.name, amount: 420, itemName: 'Vegetables and fruit', settled: false },
+    { id: uid(), t: ago(6), userId: u.id, userName: u.name, amount: 1250, itemName: 'Weekly grocery run', settled: false }
+  ];
+  if (!h.settings.budget) h.settings.budget = 6000;
+  addLog(h, u, 'seed', null, 0, 'loaded sample data');
+}
+
+
+/* ================= System checks (quality targets NFR4 and NFR8) ================= */
+function alertAccuracy(h) {
+  let total = 0, good = 0;
+  const raw = rawAlerts(h);
+  const midnight = new Date(new Date().toDateString()).getTime();
+  h.items.forEach(it => {
+    const exp = {};
+    const days = it.expiry ? Math.round((new Date(it.expiry + 'T00:00:00').getTime() - midnight) / DAY) : null;
+    if (it.qty <= 0) exp.out = 1;
+    else {
+      if (days !== null && days < 0) exp.expired = 1; else if (days !== null && days <= h.settings.alertDays) exp.soon = 1;
+      if (it.min > 0 && it.qty <= it.min) exp.low = 1;
+    }
+    const got = {}; raw.filter(a => a.itemId === it.id).forEach(a => { got[a.type] = 1; });
+    const ek = Object.keys(exp), gk = Object.keys(got);
+    total++; if (ek.length === gk.length && ek.every(k => got[k])) good++;
+  });
+  return { total: total, good: good };
+}
+function dataProblems(h) {
+  const p = [], ids = {};
+  h.items.forEach(i => {
+    if (ids[i.id]) p.push('duplicate item id for ' + i.name); ids[i.id] = 1;
+    if (!i.name || !i.unit) p.push('an item has no name or unit');
+    if (!isFinite(i.qty) || i.qty < 0) p.push(i.name + ' has an invalid quantity');
+    if (i.expiry && !/^\d{4}-\d{2}-\d{2}$/.test(i.expiry)) p.push(i.name + ' has an invalid expiry date');
+  });
+  h.shopping.forEach(s => { if (!(s.qty > 0)) p.push('shopping item ' + s.name + ' has an invalid quantity'); });
+  h.expenses.forEach(e => { if (!(e.amount > 0)) p.push('expense ' + e.itemName + ' has an invalid amount'); });
+  h.log.forEach(e => { if (isNaN(new Date(e.t).getTime())) p.push('a log entry has an invalid date'); });
+  return p;
+}
+
+/* ================= UI state ================= */
+const UI = { route: 'dashboard', modal: null, q: '', loc: 'all', stat: 'all', sort: 'expiry', authTab: 'login', sfilter: 'all', chartItem: '', logHH: '', health: null, adminOnly: false };
+const appEl = document.getElementById('app');
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg, action) {
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('act', !!action);
+  if (action) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-btn'; b.textContent = action.label;
+    b.addEventListener('click', () => { toastEl.classList.remove('show'); action.fn(); });
+    toastEl.appendChild(b);
+  }
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), action ? 8000 : 3500);
+}
+const chip = (cls, text) => '<span class="chip ' + cls + '">' + esc(text) + '</span>';
+function expChip(h, it) {
+  const d = daysLeft(it.expiry);
+  if (it.qty <= 0) return chip('gray', 'Out of stock');
+  if (d === null) return chip('gray', 'No expiry');
+  if (d < 0) return chip('red', 'Expired ' + (-d) + 'd ago');
+  if (d === 0) return chip('red', 'Today');
+  if (d === 1) return chip('red', 'Tomorrow');
+  return chip(d <= h.settings.alertDays ? 'amber' : 'green', d + ' days');
+}
+function opts(arr, sel) { return arr.map(o => '<option' + (o === sel ? ' selected' : '') + '>' + esc(o) + '</option>').join(''); }
+function field(label, name, type, extra) { return '<label class="f"><span>' + label + '</span><input name="' + name + '" type="' + type + '" ' + (extra || '') + '></label>'; }
+
+/* ================= Auth views ================= */
+function viewAuth() {
+  const reg = UI.authTab === 'register';
+  return '<div class="auth"><div class="auth-card">' +
+    '<p class="brand-big">UseFirst</p>' +
+    '<h1>' + (reg ? 'Create your account' : 'Welcome back') + '</h1>' +
+    '<p class="muted">Track what is in your kitchen, use the oldest food first, and never forget what to buy.</p>' +
+    '<div class="seg" role="group" aria-label="Sign in or create account">' +
+      '<button type="button" class="' + (reg ? '' : 'on') + '" aria-pressed="' + (!reg) + '" data-act="authTab" data-tab="login">Sign in</button>' +
+      '<button type="button" class="' + (reg ? 'on' : '') + '" aria-pressed="' + reg + '" data-act="authTab" data-tab="register">Create account</button>' +
+    '</div>' +
+    '<form data-form="' + (reg ? 'register' : 'login') + '" novalidate>' +
+      (reg ? field('Your name', 'name', 'text', 'autocomplete="name" required') : '') +
+      field('Email', 'email', 'email', 'autocomplete="email" required') +
+      field('Password', 'password', 'password', 'autocomplete="' + (reg ? 'new-password' : 'current-password') + '" required' + (reg ? ' minlength="6"' : '')) +
+      '<p class="err" role="alert"></p>' +
+      '<button class="btn primary wide" type="submit">' + (reg ? 'Create account' : 'Sign in') + '</button>' +
+    '</form>' +
+    '<p class="fineprint">Prototype for a case study. Accounts and data are stored only in this browser. Create one account per person, then use a household join code to share a kitchen on the same device. The first account created in this browser becomes the System Administrator.</p>' +
+  '</div></div>';
+}
+function viewSetup(u) {
+  return '<div class="auth"><div class="auth-card wide-card">' +
+    '<p class="brand-big">UseFirst</p>' +
+    '<h1>Hi ' + esc(u.name.split(' ')[0]) + ', set up your household</h1>' +
+    '<p class="muted">A household is the shared kitchen that you track together.</p>' +
+    '<div class="two">' +
+      '<form data-form="createHH" novalidate><h2>Create a household</h2><p class="muted">You become the Home Manager.</p>' +
+        field('Household name', 'name', 'text', 'placeholder="e.g. Bhaldar family" required') +
+        '<p class="err" role="alert"></p><button class="btn primary wide" type="submit">Create household</button></form>' +
+      '<form data-form="joinHH" novalidate><h2>Join with a code</h2><p class="muted">Ask the Home Manager for the 6-character code.</p>' +
+        field('Join code', 'code', 'text', 'placeholder="e.g. K7M2QX" maxlength="6" autocapitalize="characters" required') +
+        '<p class="err" role="alert"></p><button class="btn wide" type="submit">Join household</button></form>' +
+    '</div>' +
+    '<p class="center">' + (u.sysAdmin ? '<button type="button" class="link-btn" data-act="adminOnly">Open the admin console without a household</button> &nbsp; ' : '') + '<button type="button" class="link-btn" data-act="logout">Sign out</button></p>' +
+  '</div></div>';
+}
+
+/* ================= Shell ================= */
+/* ================= Item rows ================= */
+function itemRow(h, u, it, compact) {
+  const P = perms(u), a = [];
+  if (P.use && it.qty > 0) {
+    a.push('<button type="button" class="small-btn" data-act="openUse" data-id="' + it.id + '" data-kind="consumed">Use</button>');
+    if (isSoon(h, it)) a.push('<button type="button" class="small-btn ghost" data-act="openUse" data-id="' + it.id + '" data-kind="donated">Share</button>');
+    a.push('<button type="button" class="small-btn ghost" data-act="openUse" data-id="' + it.id + '" data-kind="wasted">Waste</button>');
+  }
+  if (P.inv && !compact) {
+    a.push('<button type="button" class="small-btn ghost" data-act="openEdit" data-id="' + it.id + '" aria-label="Edit ' + esc(it.name) + '">Edit</button>');
+    a.push('<button type="button" class="small-btn ghost danger" data-act="askDelete" data-id="' + it.id + '" aria-label="Remove ' + esc(it.name) + '">Remove</button>');
+  }
+  return '<li class="irow"><div class="iname"><button type="button" class="linklike" data-act="detail" data-id="' + it.id + '">' + esc(it.name) + '</button>' +
+    '<small>' + esc(it.category) + ' · ' + esc(it.location) + (it.expiry && !compact ? ' · ' + fmtDate(it.expiry) : '') + '</small></div>' +
+    '<div class="iqty">' + fmtQty(it.qty) + ' ' + esc(it.unit) + '</div>' +
+    '<div class="ichips">' + expChip(h, it) + (isLow(it) ? chip('amber', 'Low stock') : '') + '</div>' +
+    '<div class="iact">' + a.join('') + '</div></li>';
+}
+
+/* ================= Dashboard ================= */
+function monthCounts(h) {
+  const from = Date.now() - 30 * DAY; let c = 0, w = 0, d = 0;
+  h.log.forEach(e => { if (new Date(e.t).getTime() >= from) { if (e.type === 'consumed') c++; else if (e.type === 'wasted') w++; else if (e.type === 'donated') d++; } });
+  return { c: c, w: w, d: d };
+}
+function emptyState(u) {
+  const P = perms(u);
+  return '<div class="empty-card"><h2>Your kitchen is empty</h2><p class="muted">' + (P.inv ? 'Add your first item with a barcode or by hand, or load sample data to explore the app.' : 'Ask the Home Manager to add items.') + '</p>' +
+    (P.inv ? '<div class="row-gap"><button type="button" class="btn primary" data-act="openAdd">Add first item</button><button type="button" class="btn" data-act="seed">Load sample data</button></div>' : '') + '</div>';
+}
+function stat(label, n, sub, cls) { return '<div class="stat ' + cls + '"><p class="stat-l">' + label + '</p><p class="stat-n">' + n + '</p><p class="stat-s">' + sub + '</p></div>'; }
+const ALERT_LABEL = { expired: ['red', 'Expired'], soon: ['amber', 'Expires soon'], low: ['amber', 'Low stock'], out: ['gray', 'Out of stock'] };
+function alertRow(a, unread) {
+  const l = ALERT_LABEL[a.type];
+  return '<li class="arow' + (unread ? ' unread' : '') + '">' + chip(l[0], l[1]) + '<span class="amsg">' + esc(a.msg) + '</span></li>';
+}
+
+/* ================= Inventory ================= */
+function filteredItems(h) {
+  let list = h.items.slice();
+  const q = UI.q.trim().toLowerCase();
+  if (q) list = list.filter(i => (i.name + ' ' + i.category + ' ' + i.location + ' ' + (i.barcode || '')).toLowerCase().indexOf(q) >= 0);
+  if (UI.loc !== 'all') list = list.filter(i => i.location === UI.loc);
+  const f = { all: () => true, soon: i => isSoon(h, i), expired: isExpired, low: isLow, out: isOut }[UI.stat] || (() => true);
+  list = list.filter(f);
+  const s = UI.sort;
+  list.sort((a, b) => s === 'name' ? a.name.localeCompare(b.name) : s === 'qty' ? a.qty - b.qty : s === 'added' ? ((b.addedOn || '') < (a.addedOn || '') ? -1 : 1) : cmpExpiry(a, b));
+  return list;
+}
+function invListHtml(h, u) {
+  const list = filteredItems(h);
+  if (!list.length) return '<p class="muted pad">No items match.</p>';
+  return '<ul class="ilist">' + list.map(i => itemRow(h, u, i, false)).join('') + '</ul>';
+}
+function viewInventory(u, h) {
+  const P = perms(u);
+  const head = '<div class="page-head"><h1>Inventory</h1>' + (P.inv ? '<button type="button" class="btn primary" data-act="openAdd">Add item</button>' : '') + '</div>';
+  if (!h.items.length) return head + emptyState(u);
+  return head +
+    '<div class="toolbar">' +
+      '<label class="f grow"><span>Search</span><input id="q" type="search" placeholder="Name, category, barcode" value="' + esc(UI.q) + '"></label>' +
+      '<label class="f"><span>Place</span><select id="loc"><option value="all">All places</option>' + LOCATIONS.map(l => '<option' + (UI.loc === l ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
+      '<label class="f"><span>Show</span><select id="stat">' + [['all', 'Everything'], ['soon', 'Expiring soon'], ['expired', 'Expired'], ['low', 'Low stock'], ['out', 'Out of stock']].map(o => '<option value="' + o[0] + '"' + (UI.stat === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>' +
+      '<label class="f"><span>Sort by</span><select id="sort">' + [['expiry', 'Expiry (first out)'], ['name', 'Name'], ['qty', 'Quantity'], ['added', 'Recently added']].map(o => '<option value="' + o[0] + '"' + (UI.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>' +
+    '</div>' +
+    '<section class="card flush" id="invList">' + invListHtml(h, u) + '</section>';
+}
+
+/* ================= Use-First ================= */
+function viewUseFirst(u, h) {
+  const list = useFirstList(h);
+  const ideas = recipeIdeas(h);
+  const P = perms(u);
+  return '<div class="page-head"><h1>Use-First list</h1></div>' +
+    '<p class="muted lead">Food that expires earliest comes first (first-expired, first-out). Items with no expiry date come last.</p>' +
+    (list.length ? '<section class="card flush"><ol class="ranked">' + list.map((it, i) => '<li class="rank-row"><span class="rank">' + (i + 1) + '</span><ul class="ilist inner">' + itemRow(h, u, it, true) + '</ul></li>').join('') + '</ol></section>' : (h.items.length ? '<p class="muted">Everything is used up.</p>' : emptyState(u))) +
+    saveSection(u, h) + '<h2 class="sec">Recipe ideas</h2>' +
+    (ideas.length ? '<div class="recipes">' + ideas.map(x => '<article class="card recipe"><h3>' + esc(x.r.name) + '</h3><p class="muted small">' + x.r.time + ' min</p>' +
+      '<p>' + (x.urgent.length ? '<strong>Uses up:</strong> ' + x.urgent.map(i => esc(i.name)).join(', ') : '<strong>Uses:</strong> ' + x.found.map(i => esc(i.name)).join(', ')) + '</p>' +
+      (x.missing.length ? '<p class="muted small">Also needs: ' + x.missing.map(esc).join(', ') + '</p>' : '') +
+      '<p class="small">' + esc(x.r.tip) + '</p></article>').join('') + '</div>' : '<p class="muted">Add a few more items and recipe ideas will appear here.</p>');
+}
+
+/* ================= Shopping ================= */
+/* ================= Alerts ================= */
+/* ================= Reports ================= */
+function hbar(label, n, max, cls) {
+  return '<div class="hb"><span class="hl">' + esc(label) + '</span><div class="ht"><div class="hf ' + (cls || '') + '" style="width:' + (max ? Math.round(n / max * 100) : 0) + '%"></div></div><span class="hn">' + n + '</span></div>';
+}
+function groupCount(items, fn) { const m = {}; items.forEach(i => { const k = fn(i); m[k] = (m[k] || 0) + 1; }); return Object.keys(m).map(k => [k, m[k]]).sort((a, b) => b[1] - a[1]); }
+function viewReports(u, h) {
+  if (!h.items.length && !h.log.length) return '<div class="page-head"><h1>Reports</h1></div>' + emptyState(u);
+  const mc = monthCounts(h), rate = (mc.c + mc.w) ? Math.round(mc.w / (mc.c + mc.w) * 100) : 0;
+  const weeks = [];
+  for (let i = 5; i >= 0; i--) {
+    const end = startOfToday().getTime() + DAY - i * 7 * DAY, start = end - 7 * DAY; let c = 0, w = 0;
+    h.log.forEach(e => { const t = new Date(e.t).getTime(); if (t >= start && t < end) { if (e.type === 'consumed') c++; else if (e.type === 'wasted') w++; } });
+    weeks.push({ label: new Date(start).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), c: c, w: w });
+  }
+  const wmax = Math.max.apply(null, [1].concat(weeks.map(x => Math.max(x.c, x.w))));
+  const stock = h.items.filter(i => i.qty > 0);
+  const buckets = [['Expired', stock.filter(isExpired).length, 'red'], ['0 to 3 days', stock.filter(i => { const d = daysLeft(i.expiry); return d !== null && d >= 0 && d <= 3; }).length, 'amber'], ['4 to 7 days', stock.filter(i => { const d = daysLeft(i.expiry); return d !== null && d >= 4 && d <= 7; }).length, ''], ['8 to 30 days', stock.filter(i => { const d = daysLeft(i.expiry); return d !== null && d >= 8 && d <= 30; }).length, ''], ['Over 30 days', stock.filter(i => { const d = daysLeft(i.expiry); return d !== null && d > 30; }).length, ''], ['No expiry date', stock.filter(i => !i.expiry).length, '']];
+  const bmax = Math.max.apply(null, [1].concat(buckets.map(b => b[1])));
+  const byLoc = groupCount(stock, i => i.location), byCat = groupCount(stock, i => i.category);
+  const from90 = Date.now() - 90 * DAY, wasted = {};
+  h.log.forEach(e => { if (e.type === 'wasted' && new Date(e.t).getTime() >= from90) wasted[e.itemName] = (wasted[e.itemName] || 0) + 1; });
+  const topWaste = Object.keys(wasted).map(k => [k, wasted[k]]).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const from28 = Date.now() - 28 * DAY, use = {};
+  h.log.forEach(e => { if (e.type === 'consumed' && new Date(e.t).getTime() >= from28) { const k = e.itemName + '|' + e.unit; use[k] = (use[k] || 0) + e.qty; } });
+  const usage = Object.keys(use).map(k => { const p = k.split('|'); return [p[0], use[k] / 4, p[1]]; }).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  return '<div class="page-head"><h1>Reports</h1></div>' +
+    '<div class="stats">' + stat('Times used', mc.c, 'last 30 days', '') + stat('Times thrown away', mc.w, 'last 30 days', mc.w ? 'amber' : '') + stat('Waste rate', rate + '%', 'thrown away out of all use', rate > 25 ? 'red' : '') + stat('Items tracked', h.items.length, stock.length + ' in stock', '') + '</div>' +
+    '<div class="stats">' + stat('Money thrown away', fmtMoney(costSince(h, 'wasted', 30)), 'last 30 days', costSince(h, 'wasted', 30) ? 'amber' : '') + stat('Money at risk now', fmtMoney(moneyAtRisk(h)), 'expiring or expired', moneyAtRisk(h) ? 'amber' : '') + stat('Spent this month', fmtMoney(spendThisMonth(h)), h.settings.budget ? 'of ' + fmtMoney(h.settings.budget) + ' budget' : 'no budget set', h.settings.budget && spendThisMonth(h) > h.settings.budget ? 'red' : '') + stat('Shared, not wasted', mc.d, 'times in 30 days', '') + '</div>' +
+    '<section class="card"><h2>Used and thrown away, by week</h2><div class="legend"><span><i class="sw c"></i>Used</span><span><i class="sw w"></i>Thrown away</span></div>' +
+      '<div class="weekly" role="img" aria-label="Weekly counts: ' + weeks.map(x => x.label + ' used ' + x.c + ', thrown away ' + x.w).join('; ') + '">' +
+      weeks.map(x => '<div class="wk"><div class="bars"><div class="cbar c" style="height:' + Math.round(x.c / wmax * 100) + '%"><span>' + x.c + '</span></div><div class="cbar w" style="height:' + Math.round(x.w / wmax * 100) + '%"><span>' + x.w + '</span></div></div><small>' + x.label + '</small></div>').join('') + '</div></section>' +
+    '<div class="grid2">' +
+      '<section class="card"><h2>Expiry outlook</h2>' + buckets.map(b => hbar(b[0], b[1], bmax, b[2])).join('') + '</section>' +
+      '<section class="card"><h2>Most thrown away (90 days)</h2>' + (topWaste.length ? topWaste.map(t => hbar(t[0], t[1], topWaste[0][1], 'red')).join('') : '<p class="muted">No waste recorded.</p>') + '</section>' +
+      '<section class="card"><h2>Stock by place</h2>' + (byLoc.length ? byLoc.map(t => hbar(t[0], t[1], byLoc[0][1])).join('') : '<p class="muted">No stock.</p>') + '</section>' +
+      '<section class="card"><h2>Stock by category</h2>' + (byCat.length ? byCat.map(t => hbar(t[0], t[1], byCat[0][1])).join('') : '<p class="muted">No stock.</p>') + '</section>' +
+    '</div>' +
+    consumptionChart(h) + '<section class="card"><h2>Typical use per week</h2>' + (usage.length ? '<ul class="plain-list">' + usage.map(x => '<li><strong>' + esc(x[0]) + '</strong> about ' + fmtQty(x[1]) + ' ' + esc(x[2]) + ' per week</li>').join('') + '</ul>' : '<p class="muted">Record some use and patterns will show here. The smart shopping list uses the same numbers.</p>') + '</section>';
+}
+
+/* ================= Household (manager) ================= */
+function viewHousehold(u, h) {
+  const members = DB.users.filter(x => x.householdId === h.id);
+  const s = h.settings;
+  return '<div class="page-head"><h1>Household</h1></div>' +
+    '<section class="card"><h2>Join code</h2><p class="muted">Share this code so other people can join <strong>' + esc(h.name) + '</strong>.</p><p class="code"><span>' + esc(h.code) + '</span> <button type="button" class="small-btn" data-act="copyCode">Copy</button></p></section>' +
+    '<section class="card"><h2>Members and roles</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead><tbody>' +
+      members.map(m => '<tr><td>' + esc(m.name) + (m.id === u.id ? ' <span class="muted">(you)</span>' : '') + '</td><td>' + esc(m.email) + '</td><td>' +
+        (m.id === u.id ? ROLE_LABEL[m.role] : '<select data-role-user="' + m.id + '" aria-label="Role for ' + esc(m.name) + '">' + Object.keys(ROLE_LABEL).map(r => '<option value="' + r + '"' + (m.role === r ? ' selected' : '') + '>' + ROLE_LABEL[r] + '</option>').join('') + '</select>') +
+        '</td><td>' + (m.id === u.id ? '' : '<button type="button" class="small-btn ghost danger" data-act="askRemoveMember" data-id="' + m.id + '">Remove</button>') + '</td></tr>').join('') +
+    '</tbody></table></div>' +
+    '<p class="muted small">Home Manager: full access. Household Member: can view and record use. Viewer: view only.</p></section>' +
+    '<section class="card"><h2>Alert and data settings</h2><div class="settings">' +
+      '<label class="f"><span>Warn this many days before expiry</span><input type="number" min="1" max="14" value="' + s.alertDays + '" data-setting="alertDays"></label>' +
+      '<p class="muted small">The barcode data source is set by the System Administrator.</p>' +
+      '<label class="f"><span>Monthly grocery budget (\u20B9, 0 means off)</span><input type="number" min="0" step="any" value="' + (s.budget || 0) + '" data-setting="budget"></label>' +
+      '<label class="chk"><input type="checkbox" data-setting="autoList"' + (s.autoList ? ' checked' : '') + '><span>Add finished or low items to the shopping list automatically</span></label>' +
+    '</div></section>' +
+    backupCard() + '<section class="card"><h2>Data tools</h2><div class="row-gap"><button type="button" class="btn" data-act="seed">Load sample data</button><button type="button" class="btn danger-btn" data-act="askClear">Clear inventory</button></div></section>' +
+    '<section class="card"><h2>Activity log</h2>' + (h.log.length ? '<ul class="log">' + h.log.slice(0, 40).map(e => '<li><time>' + fmtTime(e.t) + '</time><span><strong>' + esc(e.userName) + '</strong> ' + esc(logText(e)) + '</span></li>').join('') + '</ul>' : '<p class="muted">No activity yet.</p>') + '</section>' + coverageCard();
+}
+
+/* ================= v3: wireframe dashboard, alerts, approval, admin console ================= */
+const ICON_PATHS = {
+  dashboard: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
+  inventory: 'M21 8l-9-5-9 5v8l9 5 9-5V8zM3 8l9 5 9-5M12 13v8',
+  usefirst: 'M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  shopping: 'M3 4h2l2.4 11h10.2l2-8H6.5M9 20h.01M17 20h.01',
+  alerts: 'M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0',
+  reports: 'M4 19V5M4 19h16M8 15l3-4 3 2 4-6',
+  household: 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8',
+  admin: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z'
+};
+function icon(n) { return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (ICON_PATHS[n] || '') + '"/></svg>'; }
+
+function viewShell(u, h) {
+  const P = perms(u), nav = [];
+  if (h) {
+    nav.push(['dashboard', 'Dashboard'], ['inventory', 'Inventory'], ['usefirst', 'Use-First'], ['shopping', 'Shopping list'], ['alerts', 'Alerts']);
+    if (P.reports) nav.push(['reports', 'Reports']);
+    if (P.admin) nav.push(['household', 'Household']);
+  }
+  if (P.sys) nav.push(['admin', 'Admin']);
+  if (!nav.some(n => n[0] === UI.route)) UI.route = nav[0][0];
+  const un = h ? unreadCount(h, u) : 0;
+  let navHtml = nav.map(n => '<button type="button" class="nav-btn' + (UI.route === n[0] ? ' on' : '') + '" data-act="nav" data-route="' + n[0] + '"' + (UI.route === n[0] ? ' aria-current="page"' : '') + '>' + icon(n[0]) + '<span class="nl">' + n[1] + '</span>' + (n[0] === 'alerts' && un ? '<span class="badge" aria-label="' + un + ' unread">' + un + '</span>' : '') + '</button>').join('');
+  if (!h) navHtml += '<button type="button" class="nav-btn" data-act="leaveAdminOnly">' + icon('household') + '<span class="nl">Set up household</span></button>';
+  const views = { dashboard: viewDashboard, inventory: viewInventory, usefirst: viewUseFirst, shopping: viewShopping, alerts: viewAlerts, reports: viewReports, household: viewHousehold, admin: viewAdmin };
+  const chips = (h ? '<span class="role">' + ROLE_LABEL[u.role] + '</span>' : '') + (P.sys ? '<span class="role sys">System Administrator</span>' : '');
+  return '<div class="shell">' +
+    '<aside class="side"><p class="brand">UseFirst</p><nav aria-label="Main" class="side-nav">' + navHtml + '</nav></aside>' +
+    '<div class="main">' +
+      '<header class="bar"><div class="bar-l"><strong>' + (h ? esc(h.name) : 'Admin console') + '</strong>' + chips + '</div>' +
+      '<div class="bar-r"><span class="who">' + esc(u.name) + '</span>' + (h ? '<button type="button" class="small-btn ghost" data-act="openPrefs">My settings</button>' : '') + '<button type="button" class="small-btn" data-act="logout">Sign out</button></div></header>' +
+      '<main class="view" id="view">' + views[UI.route](u, h) + '</main>' +
+    '</div>' +
+    '<nav class="bottom" aria-label="Main (mobile)">' + navHtml + '</nav>' +
+  '</div>';
+}
+
+function panel(title, route, body) {
+  return '<section class="card panel"><div class="card-h"><h2>' + title + '</h2>' + (route ? '<button type="button" class="link-btn" data-act="nav" data-route="' + route + '">Open</button>' : '') + '</div>' + body + '</section>';
+}
+function miniAlert(h, a) {
+  const it = h.items.find(i => i.id === a.itemId);
+  if (it && (a.type === 'soon' || a.type === 'expired')) {
+    const d = daysLeft(it.expiry);
+    const label = a.type === 'expired' ? it.name + ' expired' : it.name + ' in ' + (d === 0 ? 'today' : d + 'd');
+    return '<li class="arow">' + chip(a.type === 'expired' || d <= 1 ? 'red' : 'amber', label) + '<span class="amsg">' + fmtQty(it.qty) + ' ' + esc(it.unit) + ' · ' + esc(it.location) + '</span></li>';
+  }
+  return alertRow(a);
+}
+function miniConsumption(h) {
+  const weeks = [];
+  for (let i = 5; i >= 0; i--) {
+    const end = startOfToday().getTime() + DAY - i * 7 * DAY, start = end - 7 * DAY; let c = 0;
+    h.log.forEach(e => { const t = new Date(e.t).getTime(); if (e.type === 'consumed' && t >= start && t < end) c++; });
+    weeks.push({ label: new Date(start).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), c: c });
+  }
+  const max = Math.max.apply(null, [1].concat(weeks.map(w => w.c)));
+  return '<p class="muted small">Times food was used each week.</p><div class="weekly short" role="img" aria-label="Weekly use: ' + weeks.map(w => w.label + ' ' + w.c).join('; ') + '">' +
+    weeks.map(w => '<div class="wk"><div class="bars"><div class="cbar c wide" style="height:' + Math.round(w.c / max * 100) + '%"><span>' + w.c + '</span></div></div><small>' + w.label + '</small></div>').join('') + '</div>';
+}
+function viewDashboard(u, h) {
+  const P = perms(u);
+  const head = '<div class="page-head"><h1>Dashboard</h1>' + (P.inv ? '<button type="button" class="btn primary" data-act="openAdd">Add item</button>' : '') + '</div>';
+  if (!h.items.length) return head + emptyState(u);
+  const inStock = h.items.filter(i => i.qty > 0).length;
+  const soon = h.items.filter(i => isSoon(h, i)).length;
+  const exp = h.items.filter(isExpired).length;
+  const low = h.items.filter(i => isLow(i) || isOut(i)).length;
+  const mc = monthCounts(h);
+  const rate = (mc.c + mc.w) ? Math.round(mc.w / (mc.c + mc.w) * 100) : 0;
+  const first = useFirstList(h).slice(0, 5);
+  const al = userAlerts(h, u).slice(0, 6);
+  const pend = h.shopping.filter(s => !s.done), ap = approvalState(h);
+  return head + glance(h) +
+    '<div class="stats">' +
+      stat('In stock', inStock, 'items on hand', '') +
+      stat('Expiring soon', soon, 'within ' + h.settings.alertDays + ' days', soon ? 'amber' : '') +
+      stat('Expired', exp, 'still in the kitchen', exp ? 'red' : '') +
+      stat('Low or out', low, 'need restocking', low ? 'amber' : '') +
+    '</div>' +
+    '<div class="grid2 panels">' +
+      panel('Use-First List', 'usefirst', '<ul class="ilist">' + first.map(i => itemRow(h, u, i, true)).join('') + '</ul>') +
+      panel('Expiry Alerts', 'alerts', al.length ? '<ul class="alist">' + al.map(a => miniAlert(h, a)).join('') + '</ul>' : '<p class="muted">Nothing needs attention. Nice.</p>') +
+      panel('Smart Shopping List', 'shopping', pend.length ? '<ul class="alist">' + pend.slice(0, 6).map(s => '<li class="arow"><strong>' + esc(s.name) + '</strong><span class="amsg">' + fmtQty(s.qty) + ' ' + esc(s.unit) + (s.reason ? ' · ' + esc(s.reason) : '') + '</span></li>').join('') + '</ul><p class="small muted pad-top">' + (ap === 'approved' ? 'Approved for the next store visit.' : 'Waiting for approval by the Home Manager.') + '</p>' : '<p class="muted">Nothing to buy right now.</p>') +
+      panel('Consumption Chart', P.reports ? 'reports' : null, miniConsumption(h)) +
+    '</div>' +
+    moneyCard(u, h) +
+    '<section class="card"><h2>Last 30 days</h2><p class="big-line"><strong>' + mc.c + '</strong> times used, <strong>' + mc.w + '</strong> times thrown away. ' + (mc.c + mc.w ? 'Waste rate: <strong>' + rate + '%</strong>.' : '') + '</p></section>';
+}
+
+function approvalBanner(h, P) {
+  const st = approvalState(h);
+  if (st === 'approved') return '<div class="approve ok"><strong>Approved</strong> by ' + esc(h.approval.name) + ' on ' + fmtTime(h.approval.t) + '. Ready for the next store visit.</div>';
+  if (st === 'stale') return '<div class="approve warn">The list changed after it was approved. ' + (P.list ? 'Check it and approve it again.' : 'Waiting for the Home Manager to approve it again.') + '</div>';
+  if (st === 'pending') return '<div class="approve warn">Waiting for the Home Manager to approve this list before the store visit.</div>';
+  return '';
+}
+
+function viewAlerts(u, h) {
+  const P = perms(u), al = userAlerts(h, u), r = readKeys(h, u), res = resolvedAlerts(h);
+  const unread = al.filter(a => r.indexOf(a.key) < 0).length;
+  const row = a => { const l = ALERT_LABEL[a.type]; return '<li class="arow' + (r.indexOf(a.key) < 0 ? ' unread' : '') + '">' + chip(l[0], l[1]) + '<span class="amsg">' + esc(a.msg) + '</span>' + (P.use ? '<button type="button" class="small-btn ghost" data-act="resolveAlert" data-key="' + esc(a.key) + '">Mark resolved</button>' : '') + '</li>'; };
+  return '<div class="page-head"><h1>Alerts</h1>' + (unread ? '<button type="button" class="btn" data-act="markRead">Mark all read</button>' : '') + '</div>' +
+    '<p class="muted lead">Alerts update by themselves from your stock. Expiry alerts start ' + h.settings.alertDays + ' days before the date.' + (P.admin ? ' You can change this in Household settings.' : '') + (P.use ? ' If an alert is wrong, or the item was already used, press Mark resolved to dismiss it.' : '') + '</p>' +
+    (al.length ? '<section class="card flush"><ul class="alist full">' + al.map(row).join('') + '</ul></section>' : '<p class="muted">No alerts. Everything is fresh and stocked.</p>') +
+    (res.length ? '<details class="card resolved"><summary>Resolved alerts (' + res.length + ')</summary><ul class="alist">' + res.map(a => '<li class="arow"><span class="amsg">' + esc(a.msg) + '</span>' + (P.use ? '<button type="button" class="small-btn ghost" data-act="reopenAlert" data-key="' + esc(a.key) + '">Reopen</button>' : '') + '</li>').join('') + '</ul></details>' : '');
+}
+
+/* ----- System Administrator console (slide 13: manage users, manage roles, configure data sources, review system logs) ----- */
+const MATRIX = [
+  ['Log in', 1, 1, 1, 1], ['Manage inventory (add, edit, remove)', 1, 0, 0, 0], ['View inventory', 1, 1, 1, 0], ['View Use-First list', 1, 1, 1, 0],
+  ['Record consumption (use, waste, share)', 1, 1, 0, 0], ['Set alerts', 1, 0, 0, 0], ['Receive alerts', 1, 1, 1, 0], ['Mark an alert resolved', 1, 1, 0, 0],
+  ['Generate shopping list', 1, 0, 0, 0], ['Approve shopping list', 1, 0, 0, 0], ['View shopping list', 1, 1, 1, 0], ['View reports', 1, 0, 0, 0],
+  ['Manage household members', 1, 0, 0, 0], ['Manage users', 0, 0, 0, 1], ['Manage roles', 0, 0, 0, 1], ['Configure data sources', 0, 0, 0, 1], ['Review system logs', 0, 0, 0, 1]
+];
+function viewAdmin(u) {
+  const hhName = id => { const x = DB.households.find(hh => hh.id === id); return x ? x.name : 'No household'; };
+  const usersRows = DB.users.map(m => '<tr><td>' + esc(m.name) + (m.id === u.id ? ' <span class="muted">(you)</span>' : '') + '</td><td>' + esc(m.email) + '</td><td>' + esc(hhName(m.householdId)) + '</td><td>' +
+    (m.householdId ? '<select data-admin-role="' + m.id + '" aria-label="Household role for ' + esc(m.name) + '">' + Object.keys(ROLE_LABEL).map(r => '<option value="' + r + '"' + (m.role === r ? ' selected' : '') + '>' + ROLE_LABEL[r] + '</option>').join('') + '</select>' : '<span class="muted">none</span>') +
+    '</td><td><label class="chk"><input type="checkbox" data-admin-sys="' + m.id + '"' + (m.sysAdmin ? ' checked' : '') + (m.id === u.id ? ' disabled' : '') + ' aria-label="System administrator: ' + esc(m.name) + '"><span>Admin</span></label></td><td>' +
+    (m.id === u.id ? '' : '<button type="button" class="small-btn ghost danger" data-act="askRemoveUser" data-id="' + m.id + '">Remove</button>') + '</td></tr>').join('');
+  const matrix = '<div class="tablewrap"><table class="matrix"><thead><tr><th>Use case</th><th>Home Manager</th><th>Household Member</th><th>Viewer</th><th>System Administrator</th></tr></thead><tbody>' +
+    MATRIX.map(r => '<tr><td>' + esc(r[0]) + '</td>' + [1, 2, 3, 4].map(i => '<td class="' + (r[i] ? 'yes' : 'no') + '">' + (r[i] ? '&#10003;' : '&ndash;') + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+  const prodForm = '<form class="formgrid" data-form="product" novalidate>' + field('Barcode (6 to 14 digits)', 'code', 'text', 'inputmode="numeric" required') + field('Product name', 'name', 'text', 'required') +
+    '<label class="f"><span>Category</span><select name="category">' + opts(CATEGORIES, 'Other') + '</select></label><label class="f"><span>Unit</span><select name="unit">' + opts(UNITS, 'pcs') + '</select></label>' +
+    field('Usual quantity', 'qty', 'number', 'min="0" step="any" value="1"') + '<label class="f"><span>Usually kept in</span><select name="location">' + opts(LOCATIONS, 'Pantry') + '</select></label>' +
+    field('Shelf life (days, 0 = none)', 'shelf', 'number', 'min="0" step="1" value="0"') + field('Alert level', 'min', 'number', 'min="0" step="any" value="0"') +
+    '<p class="err" role="alert"></p><div><button class="btn" type="submit">Add product</button></div></form>';
+  const prods = DB.catalog.length ? '<div class="tablewrap"><table><thead><tr><th>Barcode</th><th>Product</th><th>Details</th><th></th></tr></thead><tbody>' + DB.catalog.map(c => '<tr><td>' + esc(c.code) + '</td><td>' + esc(c.name) + '</td><td>' + fmtQty(c.qty) + ' ' + esc(c.unit) + ' · ' + esc(c.location) + (c.shelf ? ' · ' + c.shelf + ' days' : '') + '</td><td><button type="button" class="small-btn ghost danger" data-act="delProduct" data-code="' + esc(c.code) + '">Remove</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="muted">No custom products yet. The built-in sample catalog has ' + Object.keys(CATALOG).length + ' products.</p>';
+  let logList;
+  if (UI.logHH) {
+    const hh = DB.households.find(x => x.id === UI.logHH);
+    logList = hh && hh.log.length ? '<ul class="log">' + hh.log.slice(0, 60).map(e => '<li><time>' + fmtTime(e.t) + '</time><span><strong>' + esc(e.userName) + '</strong> ' + esc(logText(e)) + '</span></li>').join('') + '</ul>' : '<p class="muted">No activity yet.</p>';
+  } else logList = DB.syslog.length ? '<ul class="log">' + DB.syslog.slice(0, 60).map(e => '<li><time>' + fmtTime(e.t) + '</time><span><strong>' + esc(e.who) + '</strong> ' + esc(e.text) + '</span></li>').join('') + '</ul>' : '<p class="muted">No system events yet.</p>';
+  const hl = UI.health;
+  const health = '<section class="card"><div class="card-h"><h2>System health</h2><button type="button" class="btn" data-act="runHealth">Run checks</button></div><p class="muted">Tests the quality targets from the case study on the data stored in this browser.</p>' +
+    (hl ? '<div class="tablewrap"><table class="health"><thead><tr><th>Target</th><th>Check</th><th>Goal</th><th>Result</th><th></th></tr></thead><tbody>' + hl.rows.map(r => '<tr><td><strong>' + r.id + '</strong></td><td>' + esc(r.check) + '</td><td>' + esc(r.target) + '</td><td>' + esc(r.result) + '</td><td class="' + (r.ok ? 'ok' : 'bad') + '">' + (r.ok ? 'Pass' : 'Needs attention') + '</td></tr>').join('') + '</tbody></table></div><p class="hint">Checked on ' + fmtTime(hl.t) + '.</p>' : '<p class="muted">Press Run checks.</p>') + '</section>';
+  return '<div class="page-head"><h1>Admin console</h1></div>' +
+    '<p class="muted lead">For the System Administrator: manage users and roles, configure data sources, and review system logs.</p>' +
+    '<section class="card"><h2>Users</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Household</th><th>Household role</th><th>System</th><th></th></tr></thead><tbody>' + usersRows + '</tbody></table></div></section>' +
+    '<section class="card"><h2>Roles and permissions</h2><p class="muted">What each role can do, taken from the use cases in the case study.</p>' + matrix + '</section>' +
+    '<section class="card"><h2>Data sources</h2><p class="muted">Where barcode details come from. Your custom products are looked up before the built-in sample catalog.</p>' +
+      '<label class="f"><span>Barcode data source</span><select data-config="source"><option value="catalog"' + (barcodeSource() === 'catalog' ? ' selected' : '') + '>Custom products and built-in sample catalog</option><option value="manual"' + (barcodeSource() === 'manual' ? ' selected' : '') + '>Manual entry only</option></select></label>' +
+      '<h3>Add a custom product</h3>' + prodForm + '<h3 class="mt">Custom products</h3>' + prods + '</section>' +
+    '<section class="card"><div class="card-h"><h2>System logs</h2><label class="f inline"><span>Show</span><select id="logHH"><option value="">System events</option>' + DB.households.map(x => '<option value="' + x.id + '"' + (UI.logHH === x.id ? ' selected' : '') + '>Activity: ' + esc(x.name) + '</option>').join('') + '</select></label></div>' + logList + '</section>' + health;
+}
+
+function coverageCard() {
+  const rows = [
+    ['FR1', 'Register, log in, create or join a household', 'Sign-in screen, household setup with join code'],
+    ['FR2', 'Access differs by role', 'Home Manager (household admin), Household Member, Viewer, plus System Administrator console'],
+    ['FR3', 'Central dashboard', 'Dashboard with Use-First List, Expiry Alerts, Smart Shopping List and Consumption Chart'],
+    ['FR4', 'Barcode scan and manual entry', 'Add item: type, camera scan (Chrome on Android) or look up in the data source'],
+    ['FR5', 'Detect near-expiry and depleted items', 'Alerts page and dashboard, calculated from stock every time'],
+    ['FR6', 'Notifications', 'Alert badge, plus optional daily browser notification in My settings'],
+    ['FR7', 'Smart shopping list', 'Build smart list, auto-add when an item finishes, Manager approval'],
+    ['FR8', 'Mark consumed or wasted', 'Use, Waste and Share buttons, with Undo'],
+    ['FR9', 'Item details', 'Name, expiry, quantity, place, price, alert level'],
+    ['FR10', 'Use-first and recipe hints', 'Use-First page, Save it before it goes, Recipe ideas'],
+    ['FR11', 'Lifecycle tracking', 'Item history and Activity log'],
+    ['FR12', 'Reports', 'Reports page, consumption chart for each item, money and waste'],
+    ['NFR1', 'Dashboard updates in under 2 seconds', 'Measured in Admin console, System health'],
+    ['NFR2', 'Protect data and credentials', 'Salted PBKDF2 password hashing and role-based access. Stored data is not encrypted, a limit of this browser-only prototype'],
+    ['NFR3', 'Minimal training', 'Quick check line, Undo, large text mode, mobile layout'],
+    ['NFR4', '99.9% accurate notification triggers', 'Alerts come straight from stock and dates. Verified in System health'],
+    ['NFR5, NFR6', 'Scalability and availability', 'Need a server and database. Not possible in a browser-only prototype'],
+    ['NFR7', 'Modular architecture', 'Code is split into Inventory, Alerts, Shopping, Analytics and UI sections'],
+    ['NFR8', 'Prevent record loss', 'Backup and restore, and an integrity check in System health. True atomic database operations need a real database'],
+    ['Scenario', 'Steps 1 to 10, including "Manager approves list"', 'Approve list for store visit on the Shopping list page'],
+    ['Alternative paths', 'Mark resolved and dismiss; hints or donation if no recipe', 'Mark resolved on Alerts; Save it tips and Share'],
+    ['Actors', 'Home Manager, Household Member, System Administrator', 'Roles and permissions table in the Admin console'],
+    ['Flatmates', 'Split shopping responsibilities', 'Assign items, "I\'ll buy this", shared expenses split'],
+    ['Elderly users', 'Simple reminders and easy interface', 'Large text mode and clear alert labels'],
+    ['Home managers', 'Budget planning (objective 5)', 'Monthly budget, money at risk, money thrown away'],
+    ['Future', 'Retail partner demand view and promotions', 'Not built. The deck marks it as future work']
+  ];
+  return '<section class="card"><h2>Requirements coverage</h2><p class="muted">How this prototype maps to the case study.</p><div class="tablewrap"><table><thead><tr><th>ID</th><th>Requirement</th><th>Where in the app</th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td><strong>' + r[0] + '</strong></td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>').join('') + '</tbody></table></div></section>';
+}
+
+/* ================= New views (v2) ================= */
+function glance(h) {
+  const soon = h.items.filter(i => isSoon(h, i) || isExpired(i)).length;
+  const low = h.items.filter(i => isLow(i) || isOut(i)).length;
+  const toBuy = h.shopping.filter(s => !s.done).length;
+  const idea = recipeIdeas(h).find(x => x.urgent.length);
+  return '<div class="glance"><strong>Quick check:</strong> ' + soon + ' to use soon, ' + low + ' to restock, ' + toBuy + ' on the shopping list.' +
+    (idea ? ' Tonight, try <strong>' + esc(idea.r.name) + '</strong> to use up ' + idea.urgent.map(i => esc(i.name)).join(' and ') + '.' : '') + '</div>';
+}
+function moneyCard(u, h) {
+  const P = perms(u);
+  const priced = h.items.some(i => Number(i.unitPrice) > 0), budget = h.settings.budget || 0;
+  if (!priced && !budget) return '<section class="card"><h2>Money</h2><p class="muted">Add a price to your items to see how much money is at risk of being wasted and how much you throw away.' + (P.admin ? ' You can set a monthly budget on the Household page.' : '') + '</p></section>';
+  const risk = moneyAtRisk(h), wasted = costSince(h, 'wasted', 30), spent = spendThisMonth(h);
+  let bar = '';
+  if (budget) {
+    const pct = Math.min(100, Math.round(spent / budget * 100));
+    bar = '<div class="budget"><div class="budget-top"><span>Spent this month: <strong>' + fmtMoney(spent) + '</strong> of ' + fmtMoney(budget) + '</span><span>' + Math.round(spent / budget * 100) + '%</span></div><div class="ht"><div class="hf ' + (spent > budget ? 'red' : pct > 80 ? 'amber' : '') + '" style="width:' + pct + '%"></div></div></div>';
+  }
+  return '<section class="card"><h2>Money</h2><div class="money"><div><p class="stat-l">At risk right now</p><p class="money-n' + (risk ? ' warn' : '') + '">' + fmtMoney(risk) + '</p><p class="stat-s">food that is expiring soon or expired</p></div>' +
+    '<div><p class="stat-l">Thrown away (30 days)</p><p class="money-n' + (wasted ? ' warn' : '') + '">' + fmtMoney(wasted) + '</p><p class="stat-s">at the prices you entered</p></div></div>' + bar + '</section>';
+}
+function saveSection(u, h) {
+  const P = perms(u);
+  const soon = h.items.filter(i => isSoon(h, i)).sort(cmpExpiry), exp = h.items.filter(isExpired);
+  if (!soon.length && !exp.length) return '';
+  const btn = (it, kind, label, cls) => '<button type="button" class="small-btn ' + (cls || '') + '" data-act="openUse" data-id="' + it.id + '" data-kind="' + kind + '">' + label + '</button>';
+  return '<h2 class="sec">Save it before it goes</h2><p class="muted lead">Ideas for food that expires soon. You can also share it with a neighbour or friend while it is still safe to eat.</p><div class="recipes">' +
+    soon.map(it => '<article class="card recipe"><h3>' + esc(it.name) + ' ' + expChip(h, it) + '</h3><p class="small">' + esc(saveTip(it)) + '</p>' + (P.use ? '<div class="iact start">' + btn(it, 'consumed', 'Use', '') + btn(it, 'donated', 'Share', 'ghost') + btn(it, 'wasted', 'Waste', 'ghost') + '</div>' : '') + '</article>').join('') +
+    exp.map(it => '<article class="card recipe"><h3>' + esc(it.name) + ' ' + expChip(h, it) + '</h3><p class="small">Past its date. Check it carefully, and if in doubt, throw it out.</p>' + (P.use ? '<div class="iact start">' + btn(it, 'wasted', 'Throw away', 'ghost danger') + '</div>' : '') + '</article>').join('') + '</div>';
+}
+function ledgerHtml(u, h) {
+  const P = perms(u), L = ledger(h);
+  const form = u.role === 'viewer' ? '' : '<form class="inline-form" data-form="expense" novalidate>' + field('What was it for?', 'what', 'text', 'placeholder="e.g. Vegetables from the market" required') + field('Amount (\u20B9)', 'amount', 'number', 'min="0" step="any" required') +
+    (P.admin ? '<label class="f"><span>Paid by</span><select name="payer">' + L.members.map(m => '<option value="' + m.id + '"' + (m.id === u.id ? ' selected' : '') + '>' + esc(m.name) + '</option>').join('') + '</select></label>' : '') +
+    '<button class="btn" type="submit">Add expense</button><p class="err" role="alert"></p></form>';
+  let body;
+  if (!L.open.length) body = '<p class="muted pad-top">No open expenses yet. Add what each person spends, and UseFirst shows who owes whom.</p>';
+  else body = (L.members.length < 2 ? '<p class="hint">Only one person is in this household so far. Share the join code from the Household page to split costs with flatmates.</p>' : '') + '<p class="pad-top"><strong>' + fmtMoney(L.total) + '</strong> spent in total. Fair share each: <strong>' + fmtMoney(L.share) + '</strong> (' + L.members.length + (L.members.length === 1 ? ' person' : ' people') + ').</p>' +
+    '<div class="tablewrap"><table><thead><tr><th>Person</th><th>Paid</th><th>Balance</th></tr></thead><tbody>' +
+    L.rows.map(r => '<tr><td>' + esc(r.m.name) + '</td><td>' + fmtMoney(r.paid) + '</td><td class="' + (r.bal > 0.5 ? 'pos' : r.bal < -0.5 ? 'neg' : '') + '">' + (r.bal > 0.5 ? 'gets back ' + fmtMoney(r.bal) : r.bal < -0.5 ? 'owes ' + fmtMoney(-r.bal) : 'settled') + '</td></tr>').join('') + '</tbody></table></div>' +
+    (L.pay.length ? '<ul class="plain-list pay">' + L.pay.map(p => '<li><strong>' + esc(p.from.name) + '</strong> pays <strong>' + esc(p.to.name) + '</strong> ' + fmtMoney(p.amount) + '</li>').join('') + '</ul>' : '') +
+    '<ul class="log">' + L.open.slice().sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 6).map(e => '<li><time>' + fmtTime(e.t) + '</time><span><strong>' + esc(e.userName) + '</strong> paid ' + fmtMoney(e.amount) + ' for ' + esc(e.itemName) + '</span></li>').join('') + '</ul>' +
+    (P.admin ? '<p><button type="button" class="btn" data-act="askSettle">Mark all as settled</button></p>' : '');
+  return '<h2 class="sec">Shared expenses</h2><section class="card"><p class="muted">For flatmates and families: record what each person pays and UseFirst splits it equally.</p>' + form + body + '</section>';
+}
+function viewShopping(u, h) {
+  const P = perms(u);
+  const members = DB.users.filter(x => x.householdId === h.id && x.role !== 'viewer');
+  const nameOf = id => { const m = DB.users.find(x => x.id === id); return m ? m.name.split(' ')[0] : ''; };
+  const allPending = h.shopping.filter(s => !s.done), done = h.shopping.filter(s => s.done), ap = approvalState(h);
+  let pending = allPending;
+  if (UI.sfilter === 'mine') pending = pending.filter(s => s.assignee === u.id);
+  else if (UI.sfilter === 'free') pending = pending.filter(s => !s.assignee);
+  const row = s => {
+    const have = h.items.find(i => i.qty > 0 && !isExpired(i) && !isLow(i) && i.name.toLowerCase() === s.name.toLowerCase());
+    let meta = s.reason ? '<span>' + esc(s.reason) + '</span>' : '';
+    if (have && !s.done) meta += chip('amber', 'You still have ' + fmtQty(have.qty) + ' ' + have.unit);
+    if (!s.done) {
+      if (P.list) meta += '<select class="assign" data-assign="' + s.id + '" aria-label="Who will buy ' + esc(s.name) + '"><option value="">Anyone can buy</option>' + members.map(m => '<option value="' + m.id + '"' + (s.assignee === m.id ? ' selected' : '') + '>' + esc(m.name.split(' ')[0]) + ' will buy</option>').join('') + '</select>';
+      else if (s.assignee) meta += chip('gray', nameOf(s.assignee) + ' will buy');
+    }
+    const btns = [];
+    if (!s.done && P.use && !P.list && (!s.assignee || s.assignee === u.id)) btns.push('<button type="button" class="small-btn" data-act="claim" data-id="' + s.id + '">' + (s.assignee === u.id ? 'Release' : 'I\'ll buy this') + '</button>');
+    if (P.list && !s.done) btns.push('<button type="button" class="small-btn" data-act="bought" data-id="' + s.id + '">Bought</button>');
+    if (P.list) btns.push('<button type="button" class="small-btn ghost danger" data-act="delShop" data-id="' + s.id + '" aria-label="Remove ' + esc(s.name) + ' from list">Remove</button>');
+    const qty = (P.list && !s.done) ? '<span><input class="sqty" type="number" min="0" step="any" value="' + fmtQty(s.qty) + '" data-shopqty="' + s.id + '" aria-label="Quantity of ' + esc(s.name) + '"> <span class="unit">' + esc(s.unit) + '</span></span>' : '<span class="unit">' + fmtQty(s.qty) + ' ' + esc(s.unit) + '</span>';
+    return '<li class="srow' + (s.done ? ' done' : '') + '"><label class="chk"><input type="checkbox" data-act="toggleShop" data-id="' + s.id + '"' + (s.done ? ' checked' : '') + (P.list ? '' : ' disabled') + '><span class="sname">' + esc(s.name) + '</span></label>' + qty + '<span class="sreason">' + meta + '</span><span class="iact">' + btns.join('') + '</span></li>';
+  };
+  const waText = 'Shopping list for ' + h.name + (ap === 'approved' ? ' (approved by ' + h.approval.name.split(' ')[0] + ')' : ' (draft, not yet approved)') + ':\n' + allPending.map(s => '- ' + s.name + ' ' + fmtQty(s.qty) + ' ' + s.unit + (s.assignee ? ' (' + nameOf(s.assignee) + ')' : '')).join('\n');
+  return '<div class="page-head"><h1>Shopping list</h1><div class="row-gap">' +
+      (P.list ? '<button type="button" class="btn primary" data-act="genList">Build smart list</button>' : '') +
+      (P.list && allPending.length && ap !== 'approved' ? '<button type="button" class="btn primary" data-act="approveList">Approve list for store visit</button>' : '') +
+      (allPending.length ? '<a class="btn" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=' + encodeURIComponent(waText) + '">Share on WhatsApp</a><button type="button" class="btn" data-act="copyList">Copy list</button>' : '') + '</div></div>' +
+    approvalBanner(h, P) + '<p class="muted lead">The smart list adds items that are out, low, expired, or about to run out at your usual pace. Finished items are added automatically when you record use. Items you already have in stock are flagged so you do not buy twice.</p>' +
+    (allPending.length ? '<label class="f inline"><span>Show</span><select id="sfilter"><option value="all"' + (UI.sfilter === 'all' ? ' selected' : '') + '>Everything</option><option value="mine"' + (UI.sfilter === 'mine' ? ' selected' : '') + '>Assigned to me</option><option value="free"' + (UI.sfilter === 'free' ? ' selected' : '') + '>Not assigned</option></select></label>' : '') +
+    (P.list ? '<form class="card inline-form" data-form="shopAdd" novalidate>' + field('Item', 'name', 'text', 'placeholder="Add something else" required') + field('Qty', 'qty', 'number', 'min="0" step="any" value="1" required') +
+      '<label class="f"><span>Unit</span><select name="unit">' + opts(UNITS, 'pcs') + '</select></label><button class="btn" type="submit">Add</button><p class="err" role="alert"></p></form>' : '') +
+    '<section class="card flush">' + (pending.length ? '<ul class="slist">' + pending.map(row).join('') + '</ul>' : '<p class="muted pad">' + (allPending.length ? 'Nothing matches this filter.' : 'Nothing to buy right now.') + '</p>') + '</section>' +
+    (done.length ? '<div class="card-h pad-top"><h2>Bought</h2>' + (P.list ? '<button type="button" class="link-btn" data-act="clearDone">Clear bought</button>' : '') + '</div><section class="card flush"><ul class="slist">' + done.map(row).join('') + '</ul></section>' : '') +
+    ledgerHtml(u, h);
+}
+function consumptionChart(h) {
+  const from = Date.now() - 56 * DAY, tot = {};
+  h.log.forEach(e => { if (e.type === 'consumed' && new Date(e.t).getTime() >= from) tot[e.itemName] = (tot[e.itemName] || 0) + e.qty; });
+  const names = Object.keys(tot).sort((a, b) => tot[b] - tot[a]);
+  if (!names.length) return '<section class="card"><h2>Consumption chart</h2><p class="muted">Record some use and a weekly chart for each item will appear here.</p></section>';
+  if (!UI.chartItem || names.indexOf(UI.chartItem) < 0) UI.chartItem = names[0];
+  const name = UI.chartItem, unit = (h.log.find(e => e.itemName === name && e.unit) || {}).unit || '';
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const end = startOfToday().getTime() + DAY - i * 7 * DAY, start = end - 7 * DAY; let q = 0;
+    h.log.forEach(e => { const t = new Date(e.t).getTime(); if (e.type === 'consumed' && e.itemName === name && t >= start && t < end) q += e.qty; });
+    weeks.push({ label: new Date(start).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), q: q });
+  }
+  const max = Math.max.apply(null, [0.0001].concat(weeks.map(w => w.q))), avg = weeks.reduce((s, w) => s + w.q, 0) / 8;
+  return '<section class="card"><div class="card-h"><h2>Consumption chart</h2><label class="f inline"><span>Item</span><select id="chartItem">' + names.map(n => '<option' + (n === name ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></label></div>' +
+    '<p class="muted small">About ' + fmtQty(avg) + ' ' + esc(unit) + ' per week over the last 8 weeks.</p>' +
+    '<div class="weekly short" role="img" aria-label="Weekly use of ' + esc(name) + ': ' + weeks.map(w => w.label + ' ' + fmtQty(w.q) + ' ' + unit).join('; ') + '">' +
+    weeks.map(w => '<div class="wk"><div class="bars"><div class="cbar c wide" style="height:' + Math.round(w.q / max * 100) + '%"><span>' + fmtQty(w.q) + '</span></div></div><small>' + w.label + '</small></div>').join('') + '</div></section>';
+}
+function backupCard() {
+  return '<section class="card"><h2>Backup and restore</h2><p class="muted">Your data lives in this browser. Make a backup now and then, so you never lose your records if the browser data is cleared or you switch phones.</p><div class="row-gap"><button type="button" class="btn" data-act="openBackup">Back up data</button><button type="button" class="btn" data-act="openRestore">Restore from backup</button></div></section>';
+}
+/* Camera barcode scanning and daily notification */
+let scan = null;
+function stopScan() {
+  if (scan) { cancelAnimationFrame(scan.raf); scan.stream.getTracks().forEach(t => t.stop()); scan = null; }
+  const b = document.getElementById('scanBox'); if (b) { b.innerHTML = ''; b.hidden = true; }
+}
+function maybeNotify(u, h) {
+  try {
+    if (!u.pref.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const today = iso(startOfToday()); if (u.pref.lastNotify === today) return;
+    const al = userAlerts(h, u); if (!al.length) return;
+    u.pref.lastNotify = today; save();
+    new Notification('UseFirst: ' + h.name, { body: al.length + (al.length === 1 ? ' item needs' : ' items need') + ' attention. ' + al[0].msg + '.' });
+  } catch (e) { /* ignore */ }
+}
+
+/* ================= Modals ================= */
+function viewModal(u, h) {
+  const m = UI.modal; let title = '', body = '';
+  if (m.type === 'item') {
+    const it = m.id ? h.items.find(i => i.id === m.id) : null;
+    const v = it || m.pre || { category: 'Other', unit: 'pcs', location: 'Fridge', qty: 1, min: 0 };
+    title = it ? 'Edit item' : 'Add item';
+    const canScan = !!(window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    const members = DB.users.filter(x => x.householdId === h.id && x.role !== 'viewer');
+    const shopRow = m.shopId ? h.shopping.find(s => s.id === m.shopId) : null;
+    const defPayer = (shopRow && shopRow.assignee) || u.id;
+    body = '<form data-form="item" novalidate>' +
+      '<div class="f"><span>Barcode (optional)</span><div class="bar-row"><input name="barcode" type="text" inputmode="numeric" value="' + esc(v.barcode || '') + '" placeholder="Type or scan, then press Enter"><button type="button" class="small-btn" data-act="lookup">Look up</button>' + (canScan ? '<button type="button" class="small-btn" data-act="scan">Scan</button>' : '') + '</div>' +
+      '<div id="scanBox" class="scanbox" hidden></div>' +
+      '<p class="hint" id="lookupMsg">' + (barcodeSource() === 'manual' ? 'Barcode lookup is off. Enter details by hand.' : 'Try 8900000000011 (Milk) or 8900000000059 (Eggs).' + (canScan ? ' Or press Scan to use the camera.' : ' Camera scanning needs Chrome on Android.')) + '</p></div>' +
+      field('Name', 'name', 'text', 'required value="' + esc(v.name || '') + '"') +
+      '<div class="two-s">' + field('Quantity', 'qty', 'number', 'min="0" step="any" required value="' + fmtQty(v.qty == null ? 1 : v.qty) + '"') +
+      '<label class="f"><span>Unit</span><select name="unit">' + opts(UNITS, v.unit) + '</select></label></div>' +
+      '<div class="two-s"><label class="f"><span>Category</span><select name="category">' + opts(CATEGORIES, v.category) + '</select></label>' +
+      '<label class="f"><span>Stored in</span><select name="location">' + opts(LOCATIONS, v.location) + '</select></label></div>' +
+      '<div class="two-s"><div class="f"><span>Expiry date (leave empty if none)</span><div class="bar-row"><input name="expiry" type="date" value="' + esc(v.expiry || '') + '"><button type="button" class="small-btn" data-act="suggestExpiry">Suggest</button></div><p class="hint" id="expHint">Not sure? Press Suggest for a typical date.</p></div>' +
+      field('Alert when at or below', 'min', 'number', 'min="0" step="any" value="' + fmtQty(v.min || 0) + '"') + '</div>' +
+      '<div class="two-s">' + field('Price per unit (\u20B9, optional)', 'unitPrice', 'number', 'min="0" step="any" value="' + (v.unitPrice ? fmtQty(v.unitPrice) : '') + '"') +
+      (m.shopId ? '<label class="f"><span>Paid by (for splitting costs)</span><select name="payer"><option value="">Do not record an expense</option>' + members.map(x => '<option value="' + x.id + '"' + (x.id === defPayer ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('') + '</select></label>' : '<span></span>') + '</div>' +
+      '<p class="err" role="alert"></p><div class="m-actions"><button type="button" class="btn" data-act="closeModal">Cancel</button><button type="submit" class="btn primary">' + (it ? 'Save changes' : 'Add to kitchen') + '</button></div></form>';
+  } else if (m.type === 'use') {
+    const it = h.items.find(i => i.id === m.id); if (!it) { UI.modal = null; return ''; }
+    const w = m.kind === 'wasted';
+    const dn = m.kind === 'donated'; title = (w ? 'Throw away ' : dn ? 'Share ' : 'Use ') + it.name;
+    body = '<form data-form="use" novalidate>' + (dn ? '<p class="hint">Only share food that is still safe to eat. Give it to a neighbour, a friend or a local food bank.</p>' : '') + '<p class="muted">You have <strong>' + fmtQty(it.qty) + ' ' + esc(it.unit) + '</strong>.</p>' +
+      '<div class="f"><span>How much? (' + esc(it.unit) + ')</span><div class="bar-row"><input name="amount" type="number" min="0" step="any" required value="' + fmtQty(Math.min(1, it.qty)) + '"><button type="button" class="small-btn" data-act="useAll" data-max="' + fmtQty(it.qty) + '">All</button></div></div>' +
+      '<p class="err" role="alert"></p><div class="m-actions"><button type="button" class="btn" data-act="closeModal">Cancel</button><button type="submit" class="btn ' + (w ? 'danger-btn' : 'primary') + '">' + (w ? 'Record waste' : dn ? 'Record sharing' : 'Record use') + '</button></div></form>';
+  } else if (m.type === 'detail') {
+    const it = h.items.find(i => i.id === m.id); if (!it) { UI.modal = null; return ''; }
+    const hist = itemHistory(h, it).slice(0, 12), um = usageModel(h, it);
+    title = it.name;
+    body = '<dl class="facts"><dt>Quantity</dt><dd>' + fmtQty(it.qty) + ' ' + esc(it.unit) + '</dd><dt>Stored in</dt><dd>' + esc(it.location) + '</dd><dt>Category</dt><dd>' + esc(it.category) + '</dd>' +
+      '<dt>Expiry</dt><dd>' + (it.expiry ? fmtDate(it.expiry) + ' ' + expChip(h, it) : 'No expiry date') + '</dd><dt>Alert at or below</dt><dd>' + fmtQty(it.min || 0) + ' ' + esc(it.unit) + '</dd>' +
+      '<dt>Typical use</dt><dd>' + (um.perWeek > 0 ? 'about ' + fmtQty(um.perWeek) + ' ' + esc(it.unit) + ' per week' : 'Not enough history yet') + '</dd>' + (um.days !== null ? '<dt>Runs out in</dt><dd>about ' + Math.max(1, Math.round(um.days)) + ' days at that pace</dd>' : '') + (it.barcode ? '<dt>Barcode</dt><dd>' + esc(it.barcode) + '</dd>' : '') + '</dl>' +
+      '<h3>History</h3>' + (hist.length ? '<ul class="log">' + hist.map(e => '<li><time>' + fmtTime(e.t) + '</time><span><strong>' + esc(e.userName) + '</strong> ' + esc(logText(e)) + '</span></li>').join('') + '</ul>' : '<p class="muted">No history yet.</p>') +
+      '<div class="m-actions"><button type="button" class="btn" data-act="closeModal">Close</button>' + (perms(u).inv ? '<button type="button" class="btn primary" data-act="openEdit" data-id="' + it.id + '">Edit</button>' : '') + '</div>';
+  } else if (m.type === 'prefs') {
+    const pr = u.pref; title = 'My settings';
+    body = '<form data-form="prefs" novalidate><h3>Easy reading</h3><label class="chk"><input type="checkbox" name="large"' + (pr.large ? ' checked' : '') + '><span>Large text and bigger buttons</span></label>' +
+      '<h3 class="mt">Which alerts do you want to see?</h3>' + [['expired', 'Expired items'], ['soon', 'Expiring soon'], ['low', 'Low stock'], ['out', 'Out of stock']].map(a => '<label class="chk"><input type="checkbox" name="a_' + a[0] + '"' + (pr.alerts[a[0]] !== false ? ' checked' : '') + '><span>' + a[1] + '</span></label>').join('') +
+      '<h3 class="mt">Daily notification</h3><label class="chk"><input type="checkbox" name="notify"' + (pr.notify ? ' checked' : '') + '><span>Show a browser notification once a day when something needs attention</span></label><p class="hint">Your browser will ask for permission. It works while UseFirst is open in a browser tab.</p>' +
+      '<p class="err" role="alert"></p><div class="m-actions"><button type="button" class="btn" data-act="closeModal">Cancel</button><button type="submit" class="btn primary">Save settings</button></div></form>';
+  } else if (m.type === 'backup') {
+    title = 'Back up your data';
+    body = '<p class="muted">Copy this text and keep it somewhere safe, for example in a note or an email to yourself. Paste it into "Restore from backup" to get your data back.</p><textarea class="bk" readonly rows="10" id="bkText">' + esc(makeBackup(h)) + '</textarea><div class="m-actions"><button type="button" class="btn" data-act="closeModal">Close</button><button type="button" class="btn primary" data-act="copyBackup">Copy backup</button></div>';
+  } else if (m.type === 'restore') {
+    title = 'Restore from backup';
+    body = '<form data-form="restore" novalidate><p class="muted">Paste the backup text here. This replaces the items, history, shopping list and expenses of this household.</p><textarea class="bk" name="text" rows="9" required placeholder="Paste backup text here"></textarea><p class="err" role="alert"></p><div class="m-actions"><button type="button" class="btn" data-act="closeModal">Cancel</button><button type="submit" class="btn danger-btn">Restore</button></div></form>';
+  } else if (m.type === 'confirm') {
+    title = m.title;
+    body = '<p>' + esc(m.text) + '</p><div class="m-actions"><button type="button" class="btn" data-act="closeModal">Cancel</button><button type="button" class="btn danger-btn" data-act="confirmYes">' + esc(m.label) + '</button></div>';
+  }
+  return '<div class="overlay" data-act="overlayClose"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><h2 id="mt">' + esc(title) + '</h2>' + body + '</div></div>';
+}
+
+/* ================= Render ================= */
+function render() {
+  stopScan();
+  const u = curUser(); let html, h = null;
+  if (!u) html = viewAuth();
+  else { h = curHH(u); html = (h || (u.sysAdmin && UI.adminOnly)) ? viewShell(u, h) : viewSetup(u); }
+  if (UI.modal && u && (h || UI.modal.type === 'confirm')) html += viewModal(u, h);
+  document.documentElement.classList.toggle('large', !!(u && u.pref && u.pref.large));
+  appEl.innerHTML = html;
+  if (UI.modal) { const el = appEl.querySelector('.modal input:not([type=hidden]), .modal select, .modal button'); if (el) el.focus(); }
+  if (u && h) maybeNotify(u, h);
+}
+function refreshInv() { const u = curUser(), h = curHH(u), box = document.getElementById('invList'); if (box && h) box.innerHTML = invListHtml(h, u); }
+function ferr(f, msg) { const p = f.querySelector('.err'); if (p) p.textContent = msg; }
+function joinCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+
+/* ================= Forms ================= */
+const forms = {
+  async register(f) {
+    const fd = new FormData(f), name = (fd.get('name') || '').trim(), email = (fd.get('email') || '').trim().toLowerCase(), pw = fd.get('password') || '';
+    if (!name) return ferr(f, 'Please enter your name.');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return ferr(f, 'Please enter a valid email.');
+    if (pw.length < 6) return ferr(f, 'Use a password of at least 6 characters.');
+    if (DB.users.some(x => x.email === email)) return ferr(f, 'An account with this email already exists. Try signing in.');
+    const salt = uid(), hash = await kdf(pw, salt), first = DB.users.length === 0;
+    const user = { id: uid(), name: name, email: email, salt: salt, hash: hash, householdId: null, role: null, sysAdmin: first, pref: { large: false, notify: false, alerts: { expired: true, soon: true, low: true, out: true } } };
+    DB.users.push(user); DB.session = user.id; syslog(user.name, 'created an account' + (first ? ' and became the System Administrator' : '')); save(); UI.route = 'dashboard'; render();
+  },
+  async login(f) {
+    const fd = new FormData(f), email = (fd.get('email') || '').trim().toLowerCase(), pw = fd.get('password') || '';
+    const user = DB.users.find(x => x.email === email);
+    if (!user || !(await checkPw(user, pw))) { syslog(email || '(blank)', 'failed sign-in attempt'); save(); return ferr(f, 'Email or password is not correct.'); }
+    if (user.hash.indexOf('p1$') !== 0 && user.hash.indexOf('w$') !== 0) user.hash = await kdf(pw, user.salt);
+    DB.session = user.id; syslog(user.name, 'signed in'); const h = curHH(user); if (h) addLog(h, user, 'login', null, 0, 'signed in'); save(); UI.route = 'dashboard'; render();
+  },
+  createHH(f) {
+    const u = curUser(), name = (new FormData(f).get('name') || '').trim();
+    if (!name) return ferr(f, 'Give your household a name.');
+    const h = { id: uid(), name: name, code: joinCode(), settings: { alertDays: 3, autoList: true, budget: 0 }, items: [], log: [], shopping: [], expenses: [], read: {}, resolved: {}, approval: null };
+    DB.households.push(h); u.householdId = h.id; u.role = 'manager'; addLog(h, u, 'member', null, 0, 'created the household'); save(); render();
+  },
+  joinHH(f) {
+    const u = curUser(), code = (new FormData(f).get('code') || '').trim().toUpperCase();
+    const h = DB.households.find(x => x.code === code);
+    if (!h) return ferr(f, 'No household found with that code. Codes work for accounts made in this browser.');
+    u.householdId = h.id; u.role = 'member'; addLog(h, u, 'member', null, 0, 'joined the household'); save(); render();
+  },
+  item(f) {
+    const u = curUser(), h = curHH(u); if (!perms(u).inv) return;
+    const fd = new FormData(f), name = (fd.get('name') || '').trim(), qty = Number(fd.get('qty')), min = Number(fd.get('min') || 0);
+    if (!name) return ferr(f, 'Enter a name for the item.');
+    if (!(qty >= 0) || fd.get('qty') === '') return ferr(f, 'Enter a quantity of 0 or more.');
+    if (!(min >= 0)) return ferr(f, 'Alert level cannot be negative.');
+    const price = Number(fd.get('unitPrice') || 0);
+    if (!(price >= 0)) return ferr(f, 'Price cannot be negative.');
+    const rec = { name: name, category: fd.get('category'), barcode: (fd.get('barcode') || '').trim(), qty: qty, unit: fd.get('unit'), expiry: fd.get('expiry') || '', location: fd.get('location'), min: min, unitPrice: price };
+    const m = UI.modal; let msg;
+    if (m.id) {
+      const it = h.items.find(i => i.id === m.id); Object.assign(it, rec); addLog(h, u, 'edited', it, 0); msg = name + ' updated.';
+    } else {
+      const out = h.items.find(i => i.qty <= 0 && i.name.toLowerCase() === name.toLowerCase());
+      if (out) { Object.assign(out, rec, { addedOn: plusDays(0) }); addLog(h, u, 'restocked', out, qty); }
+      else { const it = Object.assign({ id: uid(), addedOn: plusDays(0) }, rec); h.items.push(it); addLog(h, u, 'added', it, qty); }
+      msg = name + ' added.';
+      if (m.shopId) {
+        h.shopping = h.shopping.filter(s => s.id !== m.shopId);
+        const payer = DB.users.find(x => x.id === fd.get('payer') && x.householdId === h.id), amount = Math.round(qty * price * 100) / 100;
+        if (payer && amount > 0) { h.expenses.push({ id: uid(), t: new Date().toISOString(), userId: payer.id, userName: payer.name, amount: amount, itemName: name, settled: false }); msg += ' ' + fmtMoney(amount) + ' recorded as paid by ' + payer.name + '.'; }
+      }
+    }
+    save(); UI.modal = null; render(); toast(msg);
+  },
+  use(f) {
+    const u = curUser(), h = curHH(u); if (!perms(u).use) return;
+    const m = UI.modal, r = useItem(h, u, m.id, new FormData(f).get('amount'), m.kind, '');
+    if (r.err) return ferr(f, r.err);
+    UI.modal = null; render();
+    toast(r.msg, { label: 'Undo', fn: () => { const hh = curHH(curUser()); if (hh && undoUse(hh, r.undo)) { render(); toast('Undone.'); } } });
+  },
+  shopAdd(f) {
+    const u = curUser(), h = curHH(u); if (!perms(u).list) return;
+    const fd = new FormData(f), name = (fd.get('name') || '').trim(), qty = Number(fd.get('qty'));
+    if (!name) return ferr(f, 'Enter an item name.');
+    if (!(qty > 0)) return ferr(f, 'Enter a quantity above 0.');
+    if (onList(h, name)) return ferr(f, name + ' is already on the list.');
+    const have = h.items.find(i => i.qty > 0 && !isExpired(i) && i.name.toLowerCase() === name.toLowerCase());
+    h.shopping.push({ id: uid(), name: name, qty: qty, unit: fd.get('unit'), reason: 'Added by ' + u.name, done: false, auto: false, assignee: '' });
+    save(); render(); toast(name + ' added to the list.' + (have ? ' Note: you still have ' + fmtQty(have.qty) + ' ' + have.unit + ' at home.' : ''));
+  },
+  expense(f) {
+    const u = curUser(), h = curHH(u); if (u.role === 'viewer') return;
+    const fd = new FormData(f), what = (fd.get('what') || '').trim(), amount = Number(fd.get('amount'));
+    if (!what) return ferr(f, 'Say what the expense was for.');
+    if (!(amount > 0)) return ferr(f, 'Enter an amount above 0.');
+    const payerId = (perms(u).admin && fd.get('payer')) ? fd.get('payer') : u.id;
+    const p = DB.users.find(x => x.id === payerId && x.householdId === h.id);
+    if (!p) return ferr(f, 'Pick who paid.');
+    h.expenses.push({ id: uid(), t: new Date().toISOString(), userId: p.id, userName: p.name, amount: Math.round(amount * 100) / 100, itemName: what, settled: false });
+    addLog(h, u, 'expense', null, 0, 'added an expense: ' + what + ', ' + fmtMoney(amount) + ' paid by ' + p.name);
+    save(); render(); toast('Expense added.');
+  },
+  product(f) {
+    const u = curUser(); if (!u || !perms(u).sys) return;
+    const fd = new FormData(f), code = (fd.get('code') || '').trim(), name = (fd.get('name') || '').trim();
+    if (!/^\d{6,14}$/.test(code)) return ferr(f, 'A barcode has 6 to 14 digits.');
+    if (!name) return ferr(f, 'Enter the product name.');
+    const rec = { code: code, name: name, category: fd.get('category'), unit: fd.get('unit'), qty: Number(fd.get('qty')) || 1, location: fd.get('location'), shelf: Math.max(0, Math.round(Number(fd.get('shelf')) || 0)), min: Math.max(0, Number(fd.get('min')) || 0) };
+    const i = DB.catalog.findIndex(x => x.code === code); if (i >= 0) DB.catalog[i] = rec; else DB.catalog.push(rec);
+    syslog(u.name, 'added or updated product ' + name + ' (' + code + ') in the data source'); save(); render(); toast(name + ' saved in the data source.');
+  },
+  async prefs(f) {
+    const u = curUser(), fd = new FormData(f);
+    u.pref.large = fd.get('large') === 'on';
+    ['expired', 'soon', 'low', 'out'].forEach(k => { u.pref.alerts[k] = fd.get('a_' + k) === 'on'; });
+    let want = fd.get('notify') === 'on', msg = 'Settings saved.';
+    if (want) {
+      try {
+        if (!('Notification' in window)) throw new Error('unsupported');
+        let perm = Notification.permission;
+        if (perm === 'default') perm = await Notification.requestPermission();
+        if (perm !== 'granted') throw new Error('blocked');
+      } catch (e) { want = false; msg = 'Settings saved. Notifications are blocked or not supported in this browser.'; }
+    }
+    u.pref.notify = want; save(); UI.modal = null; render(); toast(msg);
+  },
+  restore(f) {
+    const u = curUser(), h = curHH(u); if (!perms(u).admin) return;
+    const err = applyBackup(h, u, (new FormData(f).get('text') || '').trim());
+    if (err) return ferr(f, err);
+    UI.modal = null; render(); toast('Backup restored.');
+  }
+};
+
+/* ================= Click actions ================= */
+function copyText(text, okMsg) {
+  const fallback = () => toast('Copy is blocked here. Select the text and copy it by hand.');
+  try { navigator.clipboard.writeText(text).then(() => toast(okMsg), fallback); } catch (e) { fallback(); }
+}
+const confirms = {
+  deleteItem(id) { const u = curUser(), h = curHH(u), it = h.items.find(i => i.id === id); if (!it) return; h.items = h.items.filter(i => i.id !== id); addLog(h, u, 'removed', it, 0); save(); UI.modal = null; render(); toast(it.name + ' removed.'); },
+  clearInventory() { const u = curUser(), h = curHH(u); h.items = []; addLog(h, u, 'seed', null, 0, 'cleared the inventory'); save(); UI.modal = null; render(); toast('Inventory cleared.'); },
+  loadSample() { const u = curUser(), h = curHH(u); seedData(h, u); save(); UI.modal = null; UI.route = 'dashboard'; render(); toast('Sample data loaded.'); },
+  removeMember(id) { const u = curUser(), h = curHH(u), m = DB.users.find(x => x.id === id); if (!m || m.id === u.id) return; m.householdId = null; m.role = null; addLog(h, u, 'member', null, 0, 'removed ' + m.name + ' from the household'); save(); UI.modal = null; render(); toast(m.name + ' removed.'); }
+};
+confirms.removeUser = function (id) {
+  const u = curUser(); if (!u || !perms(u).sys) return;
+  const m = DB.users.find(x => x.id === id); if (!m || m.id === u.id) return;
+  if (m.householdId && m.role === 'manager' && DB.users.filter(x => x.householdId === m.householdId && x.role === 'manager').length < 2) { UI.modal = null; render(); toast('Make someone else a Home Manager first. A household needs at least one.'); return; }
+  DB.users = DB.users.filter(x => x.id !== id); syslog(u.name, 'removed the account of ' + m.name); save(); UI.modal = null; render(); toast(m.name + ' was removed.');
+};
+confirms.settle = function () {
+  const u = curUser(), h = curHH(u); if (!perms(u).admin) return;
+  const L = ledger(h); const ids = L.open.map(e => e.id);
+  h.expenses.forEach(e => { if (ids.indexOf(e.id) >= 0) e.settled = true; });
+  addLog(h, u, 'expense', null, 0, 'settled up shared expenses of ' + fmtMoney(L.total));
+  save(); UI.modal = null; render(); toast('All expenses marked as settled.');
+};
+const acts = {
+  nav(el) { UI.route = el.dataset.route; UI.modal = null; render(); window.scrollTo(0, 0); },
+  logout() { const lu = curUser(); if (lu) syslog(lu.name, 'signed out'); DB.session = null; UI.modal = null; UI.route = 'dashboard'; UI.authTab = 'login'; UI.q = ''; UI.loc = 'all'; UI.stat = 'all'; save(); render(); },
+  authTab(el) { UI.authTab = el.dataset.tab; render(); },
+  openAdd() { UI.modal = { type: 'item' }; render(); },
+  openEdit(el) { UI.modal = { type: 'item', id: el.dataset.id }; render(); },
+  openUse(el) { UI.modal = { type: 'use', id: el.dataset.id, kind: el.dataset.kind }; render(); },
+  detail(el) { UI.modal = { type: 'detail', id: el.dataset.id }; render(); },
+  askDelete(el) { const h = curHH(curUser()), it = h.items.find(i => i.id === el.dataset.id); UI.modal = { type: 'confirm', title: 'Remove item?', text: 'Remove ' + (it ? it.name : 'this item') + ' from your kitchen? Its history stays in the log.', yes: 'deleteItem', arg: el.dataset.id, label: 'Remove' }; render(); },
+  askClear() { UI.modal = { type: 'confirm', title: 'Clear inventory?', text: 'This removes every item from the inventory. The shopping list and activity log are kept.', yes: 'clearInventory', label: 'Clear inventory' }; render(); },
+  askRemoveMember(el) { const m = DB.users.find(x => x.id === el.dataset.id); UI.modal = { type: 'confirm', title: 'Remove member?', text: (m ? m.name : 'This person') + ' will lose access to this household.', yes: 'removeMember', arg: el.dataset.id, label: 'Remove' }; render(); },
+  seed() {
+    const h = curHH(curUser());
+    if (h.items.length) { UI.modal = { type: 'confirm', title: 'Replace inventory with sample data?', text: 'Your current items and activity history will be replaced by sample data.', yes: 'loadSample', label: 'Load sample data' }; render(); }
+    else confirms.loadSample();
+  },
+  confirmYes() { const m = UI.modal; if (m && confirms[m.yes]) confirms[m.yes](m.arg); },
+  closeModal() { UI.modal = null; render(); },
+  overlayClose(el, e) { if (e.target === el) { UI.modal = null; render(); } },
+  lookup() {
+    const h = curHH(curUser()), form = document.querySelector('.modal form'), msg = document.getElementById('lookupMsg');
+    if (!form || !msg) return;
+    const code = form.elements.barcode.value.trim();
+    if (barcodeSource() === 'manual') { msg.textContent = 'Barcode lookup is turned off by the System Administrator. Enter the details by hand.'; return; }
+    const p = findProduct(code);
+    if (!p) { msg.textContent = code ? 'No product found for that barcode. Enter the details by hand.' : 'Type a barcode first.'; return; }
+    form.elements.name.value = p.name; form.elements.category.value = p.category; form.elements.unit.value = p.unit;
+    form.elements.qty.value = p.qty; form.elements.location.value = p.location; form.elements.min.value = p.min;
+    form.elements.expiry.value = p.shelf ? plusDays(p.shelf) : '';
+    msg.textContent = 'Found ' + p.name + '. Check the quantity and expiry date, then save.';
+  },
+  useAll(el) { const i = document.querySelector('.modal input[name=amount]'); if (i) i.value = el.dataset.max; },
+  genList() {
+    const u = curUser(), h = curHH(u); if (!perms(u).list) return;
+    const n = generateList(h); if (n) addLog(h, u, 'list', null, 0, 'built the smart shopping list (' + n + ' new)'); save(); render();
+    toast(n ? n + (n === 1 ? ' item' : ' items') + ' added to the list.' : 'Nothing new to add. Your stock looks fine.');
+  },
+  toggleShop(el) { const u = curUser(), h = curHH(u); if (!perms(u).list) return; const s = h.shopping.find(x => x.id === el.dataset.id); if (s) { s.done = !s.done; save(); render(); } },
+  delShop(el) { const u = curUser(), h = curHH(u); if (!perms(u).list) return; h.shopping = h.shopping.filter(x => x.id !== el.dataset.id); save(); render(); },
+  clearDone() { const u = curUser(), h = curHH(u); if (!perms(u).list) return; h.shopping = h.shopping.filter(x => !x.done); save(); render(); },
+  bought(el) {
+    const u = curUser(), h = curHH(u); if (!perms(u).inv && !perms(u).list) return;
+    const s = h.shopping.find(x => x.id === el.dataset.id); if (!s) return;
+    const known = h.items.find(i => i.name.toLowerCase() === s.name.toLowerCase());
+    const pre = known ? { name: known.name, category: known.category, unit: known.unit, location: known.location, min: known.min, barcode: known.barcode, unitPrice: known.unitPrice, qty: s.qty } : { name: s.name, category: 'Other', unit: s.unit, location: 'Fridge', min: 0, qty: s.qty };
+    UI.modal = { type: 'item', pre: pre, shopId: s.id }; render();
+  },
+  copyList() { const h = curHH(curUser()); const t = h.shopping.filter(s => !s.done).map(s => '- ' + s.name + ' ' + fmtQty(s.qty) + ' ' + s.unit).join('\n'); copyText(t, 'Shopping list copied.'); },
+  markRead() { const u = curUser(), h = curHH(u); h.read = h.read || {}; h.read[u.id] = deriveAlerts(h).map(a => a.key); save(); render(); },
+  copyCode() { copyText(curHH(curUser()).code, 'Join code copied.'); },
+  openPrefs() { UI.modal = { type: 'prefs' }; render(); },
+  adminOnly() { UI.adminOnly = true; UI.route = 'admin'; render(); },
+  leaveAdminOnly() { UI.adminOnly = false; render(); },
+  approveList() { const u = curUser(), h = curHH(u); if (!perms(u).list) return; if (approveList(h, u)) { render(); toast('List approved for the next store visit.'); } },
+  resolveAlert(el) {
+    const u = curUser(), h = curHH(u); if (!perms(u).use) return;
+    const key = el.dataset.key, a = rawAlerts(h).find(x => x.key === key); if (!a) return;
+    h.resolved[key] = { by: u.id, name: u.name, t: new Date().toISOString() };
+    addLog(h, u, 'resolved', null, 0, 'marked an alert as resolved: ' + a.msg); save(); render();
+    toast('Alert marked as resolved.', { label: 'Undo', fn: () => { const hh = curHH(curUser()); if (hh) { delete hh.resolved[key]; save(); render(); } } });
+  },
+  reopenAlert(el) { const u = curUser(), h = curHH(u); if (!perms(u).use) return; delete h.resolved[el.dataset.key]; save(); render(); toast('Alert reopened.'); },
+  askRemoveUser(el) { const m = DB.users.find(x => x.id === el.dataset.id); UI.modal = { type: 'confirm', title: 'Remove this account?', text: (m ? m.name : 'This person') + ' will no longer be able to sign in. Their history stays in the household log.', yes: 'removeUser', arg: el.dataset.id, label: 'Remove account' }; render(); },
+  delProduct(el) { const u = curUser(); if (!perms(u).sys) return; DB.catalog = DB.catalog.filter(x => x.code !== el.dataset.code); syslog(u.name, 'removed product ' + el.dataset.code + ' from the data source'); save(); render(); },
+  runHealth() {
+    const u = curUser(); if (!perms(u).sys) return;
+    let slowest = 0, tot = 0, good = 0; const probs = [];
+    DB.households.forEach(h => {
+      const t0 = performance.now(); viewDashboard(u, h); slowest = Math.max(slowest, performance.now() - t0);
+      const a = alertAccuracy(h); tot += a.total; good += a.good;
+      dataProblems(h).forEach(x => probs.push(h.name + ': ' + x));
+    });
+    const rows = [
+      { id: 'NFR1', check: 'Dashboard refresh time', target: 'under 2 seconds', result: DB.households.length ? Math.round(slowest) + ' ms (slowest household)' : 'No households yet', ok: slowest < 2000 },
+      { id: 'NFR4', check: 'Alert accuracy', target: '99.9% or better', result: tot ? (good / tot * 100).toFixed(1) + '% (' + good + ' of ' + tot + ' items)' : 'No items yet', ok: tot === 0 || good / tot >= 0.999 },
+      { id: 'NFR8', check: 'Data integrity', target: 'no damaged records', result: probs.length ? probs.length + ' problem(s): ' + probs.slice(0, 3).join('; ') : 'No problems found', ok: probs.length === 0 }
+    ];
+    UI.health = { rows: rows, t: new Date().toISOString() }; syslog(u.name, 'ran the system health checks'); save(); render();
+  },
+  openBackup() { if (perms(curUser()).admin) { UI.modal = { type: 'backup' }; render(); } },
+  openRestore() { if (perms(curUser()).admin) { UI.modal = { type: 'restore' }; render(); } },
+  copyBackup() { const t = document.getElementById('bkText'); if (!t) return; t.select(); copyText(t.value, 'Backup copied. Keep it somewhere safe.'); },
+  askSettle() { UI.modal = { type: 'confirm', title: 'Mark all as settled?', text: 'This closes the current shared expenses. Do this after everyone has paid each other back.', yes: 'settle', label: 'Mark settled' }; render(); },
+  claim(el) {
+    const u = curUser(), h = curHH(u); if (!perms(u).use) return;
+    const s = h.shopping.find(x => x.id === el.dataset.id); if (!s || (s.assignee && s.assignee !== u.id)) return;
+    s.assignee = s.assignee === u.id ? '' : u.id; save(); render();
+  },
+  suggestExpiry() {
+    const form = document.querySelector('.modal form'), hint = document.getElementById('expHint'); if (!form || !hint) return;
+    const c = form.elements.category.value, l = form.elements.location.value, d = typicalDays(c, l);
+    if (!d) { hint.textContent = 'No typical shelf life for this category. Please read the date on the pack.'; return; }
+    form.elements.expiry.value = plusDays(d);
+    hint.textContent = 'Typical for ' + c + ' kept in ' + l + ': about ' + d + ' days. This is only an estimate, so check the pack.';
+  },
+  async scan() {
+    const box = document.getElementById('scanBox'), msg = document.getElementById('lookupMsg');
+    if (!box) return;
+    if (scan) { stopScan(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const video = document.createElement('video'); video.setAttribute('playsinline', ''); video.muted = true; video.srcObject = stream; await video.play();
+      box.hidden = false; box.appendChild(video); msg.textContent = 'Point the camera at the barcode.';
+      const det = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+      scan = { stream: stream, raf: 0 };
+      const tick = async () => {
+        if (!scan) return;
+        try { const r = await det.detect(video); if (r.length) { const form = document.querySelector('.modal form'); if (form) form.elements.barcode.value = r[0].rawValue; stopScan(); acts.lookup(); return; } } catch (e) { /* keep trying */ }
+        if (scan) scan.raf = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) { stopScan(); if (msg) msg.textContent = 'The camera is not available here. Type the barcode instead.'; }
+  }
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const fn = acts[el.dataset.act]; if (fn) fn(el, e);
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-form]'); if (!f) return;
+  e.preventDefault(); const fn = forms[f.dataset.form]; if (fn) fn(f);
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { UI.q = e.target.value; refreshInv(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target, u = curUser(), h = curHH(u);
+  if (u && perms(u).sys && t.dataset.adminRole) {
+    const m = DB.users.find(x => x.id === t.dataset.adminRole);
+    if (m && m.householdId) {
+      const mgrs = DB.users.filter(x => x.householdId === m.householdId && x.role === 'manager');
+      if (m.role === 'manager' && t.value !== 'manager' && mgrs.length < 2) { toast('A household needs at least one Home Manager.'); render(); return; }
+      m.role = t.value; syslog(u.name, 'changed the role of ' + m.name + ' to ' + ROLE_LABEL[m.role]); save(); render(); toast(m.name + ' is now ' + ROLE_LABEL[m.role] + '.');
+    }
+  }
+  else if (u && perms(u).sys && t.dataset.adminSys) {
+    const m = DB.users.find(x => x.id === t.dataset.adminSys);
+    if (m && m.id !== u.id) { m.sysAdmin = t.checked; syslog(u.name, (m.sysAdmin ? 'made ' : 'removed System Administrator rights from ') + m.name + (m.sysAdmin ? ' a System Administrator' : '')); save(); render(); }
+  }
+  else if (u && perms(u).sys && t.dataset.config === 'source') { DB.config.source = t.value; syslog(u.name, 'set the barcode data source to ' + (t.value === 'manual' ? 'manual entry only' : 'custom products and sample catalog')); save(); render(); toast('Data source updated.'); }
+  else if (t.id === 'logHH') { UI.logHH = t.value; render(); }
+  else if (t.id === 'sfilter') { UI.sfilter = t.value; render(); }
+  else if (t.id === 'chartItem') { UI.chartItem = t.value; render(); }
+  else if (u && h && t.dataset.assign && perms(u).list) { const s = h.shopping.find(x => x.id === t.dataset.assign); if (s) { s.assignee = t.value; save(); render(); } }
+  else if (t.id === 'loc') { UI.loc = t.value; refreshInv(); }
+  else if (t.id === 'stat') { UI.stat = t.value; refreshInv(); }
+  else if (t.id === 'sort') { UI.sort = t.value; refreshInv(); }
+  else if (u && h && t.dataset.setting && perms(u).admin) {
+    const k = t.dataset.setting;
+    if (k === 'alertDays') h.settings.alertDays = Math.min(14, Math.max(1, Math.round(Number(t.value) || 3)));
+    else if (k === 'autoList') h.settings.autoList = t.checked;
+    else if (k === 'budget') h.settings.budget = Math.max(0, Number(t.value) || 0);
+    addLog(h, u, 'settings', null, 0, 'changed household settings'); save(); render(); toast('Settings saved.');
+  } else if (u && h && t.dataset.roleUser && perms(u).admin) {
+    const m = DB.users.find(x => x.id === t.dataset.roleUser);
+    if (m && m.id !== u.id && m.householdId === h.id) { m.role = t.value; addLog(h, u, 'member', null, 0, 'changed ' + m.name + ' to ' + ROLE_LABEL[m.role]); save(); render(); toast(m.name + ' is now ' + ROLE_LABEL[m.role] + '.'); }
+  } else if (u && h && t.dataset.shopqty && perms(u).list) {
+    const s = h.shopping.find(x => x.id === t.dataset.shopqty), v = Number(t.value);
+    if (s && v > 0) { s.qty = v; save(); render(); } else render();
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && UI.modal) { UI.modal = null; render(); }
+  else if (e.key === 'Enter' && e.target && e.target.name === 'barcode') { e.preventDefault(); acts.lookup(); }
+});
+
+render();
+})();
+
+</script>
+</body>
+</html>
